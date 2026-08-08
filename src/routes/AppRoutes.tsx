@@ -2,14 +2,16 @@ import { Routes, Route } from "react-router-dom";
 
 import Home from "../pages/Home/Home";
 import Login from "../pages/Login/Login";
-import Dashboard from "../pages/Dashboard/Dashboard";
+import { DashboardPage } from "../pages/Dashboard/DashboardPage";
+
+
 
 const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/dashboard" element= {<DashboardPage/>} />
     </Routes>
   );
 };
