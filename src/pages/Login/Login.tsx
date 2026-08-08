@@ -1,5 +1,5 @@
 import { FcGoogle } from "react-icons/fc";
-import { googleLogin } from "../../services/auth";
+import { handleGoogleLogin} from "../../services/auth"
 const Login = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#111827] px-6">
@@ -13,7 +13,7 @@ const Login = () => {
         </p>
 
         <button
-          onClick={googleLogin}
+          onClick={handleGoogleLogin}
           className="mt-8 flex w-full items-center justify-center gap-3 rounded-xl bg-white py-3 font-semibold text-black transition hover:scale-[1.02]"
         >
           <FcGoogle size={24} />
