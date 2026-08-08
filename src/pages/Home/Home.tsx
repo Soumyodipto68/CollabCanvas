@@ -1,17 +1,19 @@
-import Navbar from "../../components/Navbar";
-import Hero from "../../components/Hero";
-import Features from "../../components/Features";
-import Footer from "../../components/Footer";
+import { Features } from "../../components/ui/Features";
+import { Footer } from "../../components/ui/Footer";
+import { Hero } from "../../components/ui/Hero";
+import { Navbar } from "../../components/ui/Navbar";
+
 
 const Home = () => {
   return (
     <div className="min-h-screen bg-[#111827] text-white">
       <Navbar />
       <Hero />
-      <Features />
-      <Footer />
+      <Features/>
+      <Footer/>
     </div>
   );
 };
+
 
 export default Home;
