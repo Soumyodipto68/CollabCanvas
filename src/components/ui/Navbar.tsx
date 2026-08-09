@@ -7,7 +7,6 @@ export const Navbar: React.FC = () => {
   const { user, loading, setUser } = useAuth();
   const navigate = useNavigate();
 
-  // Extract user fields safely regardless of backend payload structure
   const activeUser = (user as any)?.user || user;
   const displayName =
     activeUser?.name ||
@@ -18,8 +17,7 @@ export const Navbar: React.FC = () => {
   const handleLogout = async () => {
     try {
       const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "GET",
         credentials: "include",
       });
 
@@ -40,18 +38,12 @@ export const Navbar: React.FC = () => {
       </Link>
 
       <div className="flex items-center gap-6">
-        <a href="#features" className="text-slate-400 hover:text-white transition text-sm">
-          Features
-        </a>
-
-        {/* Dashboard Link */}
         {activeUser && (
           <Link to="/dashboard" className="text-slate-400 hover:text-white transition text-sm">
             Dashboard
           </Link>
         )}
 
-        {/* User / Auth Action Controls */}
         {loading ? (
           <div className="h-9 w-20 bg-slate-800 animate-pulse rounded-lg" />
         ) : activeUser ? (
@@ -69,7 +61,7 @@ export const Navbar: React.FC = () => {
         ) : (
           <button
             onClick={() => navigate("/login")}
-            className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-500 shadow-sm transition cursor-pointer"
+            className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-500 transition cursor-pointer"
           >
             Sign In
           </button>
