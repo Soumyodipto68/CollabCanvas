@@ -1,307 +1,147 @@
-// client_side/src/pages/DashboardPage.tsx
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+// src/pages/DashboardPage.tsx
+import React, { useState } from "react";
+import { Sidebar } from "../../components/dashboard/Sidebar";
 import { Navbar } from "../../components/ui/Navbar";
-
-interface Board {
-  id: string;
-  title: string;
-  updatedAt: string;
-  createdAt?: string;
-  isFavorite?: boolean;
-}
+import { DashboardHeader } from "../../components/dashboard/DashboardHeader";
+import { SearchBarControls } from "../../components/dashboard/SearchBarControls";
+import { BoardCard} from "../../components/dashboard/BoardCard";
+import { EmptyState } from "../../components/dashboard/EmptyState";
+import { CreateBoardModal } from "../../components/dashboard/CreateBoardModal";
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 export const DashboardPage: React.FC = () => {
   const [boards, setBoards] = useState<Board[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"all" | "recent" | "favorites">("all");
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const [newBoardTitle, setNewBoardTitle] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
+  const [isCreating, setIsCreating] = useState(false);
   const navigate = useNavigate();
 
-  // Fetch whiteboards from API on mount
   useEffect(() => {
     fetchBoards();
   }, []);
 
   const fetchBoards = async () => {
     try {
-      setLoading(true);
-      const response = await fetch("/api/boards", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch("http://localhost:4000/api/boards", {
         credentials: "include",
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setBoards(data.boards || []);
-      } else if (response.status === 401) {
-        navigate("/login");
-      } else {
-        setError("Failed to fetch whiteboards.");
+      if (res.ok) {
+        const data = await res.json();
+        setBoards(data);
       }
     } catch (err) {
-      console.error(err);
-      setError("Network error while loading boards.");
+      console.error("Failed to fetch boards:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Create new whiteboard
   const handleCreateBoard = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newBoardTitle.trim()) return;
+    if (isCreating) return;
+
+    const titleToCreate = newBoardTitle.trim() || "Untitled Board";
+    setIsCreating(true);
 
     try {
-      const response = await fetch("/api/boards", {
+      const res = await fetch("http://localhost:4000/api/boards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ title: newBoardTitle }),
+        body: JSON.stringify({ title: titleToCreate }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setBoards([data.board, ...boards]);
+      if (res.ok) {
+        const newBoard: Board = await res.json();
         setNewBoardTitle("");
         setIsModalOpen(false);
-        // Direct route to canvas page
-        navigate(`/board/${data.board.id}`);
-      } else {
-        setError("Failed to create whiteboard.");
+        setBoards((prev) => [newBoard, ...prev]);
+        navigate(`/board/${newBoard.id}`, { state: { board: newBoard } });
       }
     } catch (err) {
-      console.error(err);
-      setError("Error creating board.");
+      console.error("Failed to create board:", err);
+    } finally {
+      setIsCreating(false);
     }
   };
 
-  // Delete whiteboard
-  const handleDeleteBoard = async (boardId: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevents clicking card action
-    if (!window.confirm("Are you sure you want to delete this board?")) return;
+  const handleDeleteBoard = async (e: React.MouseEvent, boardId: string) => {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this board?")) return;
 
     try {
-      const response = await fetch(`/api/boards/${boardId}`, {
+      const res = await fetch(`http://localhost:4000/api/boards/${boardId}`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
         credentials: "include",
       });
 
-      if (response.ok) {
-        setBoards(boards.filter((board) => board.id !== boardId));
+      if (res.ok) {
+        setBoards((prev) => prev.filter((b) => b.id !== boardId));
       }
     } catch (err) {
-      console.error(err);
+      console.error("Failed to delete board:", err);
     }
   };
 
-  // Filter boards according to Search & Active Tab
-  const filteredBoards = boards.filter((board) => {
-    const matchesSearch = board.title.toLowerCase().includes(searchQuery.toLowerCase());
-    if (activeTab === "favorites") return matchesSearch && board.isFavorite;
-    return matchesSearch;
-  });
-
+  // Filter boards dynamically based on search query
+  const filteredBoards = boards.filter((board) =>
+    board.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col">
-      {/* Top Navigation */}
-      <Navbar />
+    <div className="flex h-screen bg-slate-900 text-slate-100 overflow-hidden">
+      {/* Sidebar on the left */}
+      <Sidebar />
 
-      <div className="flex flex-1">
-        {/* Dashboard Sidebar */}
-        <aside className="w-64 bg-slate-900/60 border-r border-slate-800 p-6 hidden md:flex flex-col justify-between">
-          <div className="space-y-6">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 tracking-wider uppercase mb-3">
-                Workspace
-              </p>
-              <nav className="space-y-1">
-                <button
-                  onClick={() => setActiveTab("all")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition ${
-                    activeTab === "all"
-                      ? "bg-blue-600 text-white"
-                      : "text-slate-400 hover:bg-slate-800 hover:text-white"
-                  }`}
-                >
-                  <span>📋</span> All Boards
-                </button>
-                <button
-                  onClick={() => setActiveTab("recent")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition ${
-                    activeTab === "recent"
-                      ? "bg-blue-600 text-white"
-                      : "text-slate-400 hover:bg-slate-800 hover:text-white"
-                  }`}
-                >
-                  <span>🕒</span> Recent
-                </button>
-                <button
-                  onClick={() => setActiveTab("favorites")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition ${
-                    activeTab === "favorites"
-                      ? "bg-blue-600 text-white"
-                      : "text-slate-400 hover:bg-slate-800 hover:text-white"
-                  }`}
-                >
-                  <span>⭐</span> Favorites
-                </button>
-              </nav>
-            </div>
-          </div>
+      {/* Main Area (Navbar + Content) */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* Top Navbar */}
+        <Navbar />
 
-          <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-400">
-            <p className="font-semibold text-slate-200">Total Boards</p>
-            <p className="text-xl font-bold text-blue-400 mt-1">{boards.length}</p>
-          </div>
-        </aside>
+        {/* Scrollable Dashboard Body */}
+        <main className="flex-1 p-8 overflow-y-auto">
+          <div className="max-w-7xl mx-auto">
+            <DashboardHeader />
 
-        {/* Main Content Area */}
-        <main className="flex-1 p-8 max-w-7xl">
-          {/* Header Bar */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-3xl font-extrabold tracking-tight">Dashboard</h1>
-              <p className="text-sm text-slate-400 mt-1">
-                Manage your real-time collaborative canvas boards.
-              </p>
-            </div>
+            <SearchBarControls
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          onOpenModal={() => setIsModalOpen(true)}
+           />
 
-            {/* Actions: Search and Create */}
-            <div className="flex items-center gap-3">
-              <input
-                type="text"
-                placeholder="Search boards..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition w-full sm:w-64"
-              />
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-600/20 transition whitespace-nowrap"
-              >
-                + New Board
-              </button>
-            </div>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm">
-              {error}
-            </div>
-          )}
-
-          {/* Boards Grid */}
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-48 bg-slate-900/60 border border-slate-800/80 rounded-2xl animate-pulse"
-                />
-              ))}
-            </div>
-          ) : filteredBoards.length === 0 ? (
-            <div className="text-center py-24 bg-slate-900/30 rounded-2xl border border-dashed border-slate-800">
-              <span className="text-5xl block mb-3">🎨</span>
-              <p className="text-slate-300 font-semibold text-lg">No whiteboards found</p>
-              <p className="text-slate-500 text-xs mt-1">
-                Create a new board to start drawing with your team!
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredBoards.map((board) => (
-                <div
-                  key={board.id}
-                  onClick={() => navigate(`/board/${board.id}`)}
-                  className="group relative bg-slate-900/80 border border-slate-800 rounded-2xl p-6 hover:border-blue-500/50 hover:shadow-2xl transition-all cursor-pointer flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-bold text-lg text-slate-100 group-hover:text-blue-400 transition truncate">
-                        {board.title}
-                      </h3>
-                      <button
-                        onClick={(e) => handleDeleteBoard(board.id, e)}
-                        className="text-slate-500 hover:text-red-400 p-1 rounded transition"
-                        title="Delete Board"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-2">
-                      Updated {new Date(board.updatedAt).toLocaleDateString()}
-                    </p>
-                  </div>
+          <p className="text-slate-400">Loading whiteboards...</p>
+        ) : filteredBoards.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-5">
+            {filteredBoards.map((board) => (
+              <BoardCard
+                key={board.id}
+                board={board}
+                onSelect={(selectedBoard) =>
+                  navigate(`/board/${selectedBoard.id}`, { state: { board: selectedBoard } })
+                }
+                onDelete={handleDeleteBoard}
+              />
+            ))}
+          </div>
+        )}
+          </div>
 
-                  {/* Thumbnail Placeholder Graphic */}
-                  <div className="mt-6 aspect-video bg-slate-950 rounded-xl border border-slate-800/80 flex items-center justify-center text-slate-700 group-hover:border-slate-700 transition">
-                    <span className="text-2xl opacity-40">✏️</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Modal for board creation */}
+          <CreateBoardModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          title={newBoardTitle}
+          setTitle={setNewBoardTitle}
+          onSubmit={handleCreateBoard}
+          isCreating={isCreating}
+        />
         </main>
       </div>
-
-      {/* Create Board Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full relative shadow-2xl">
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
-            >
-              ✕
-            </button>
-            <h3 className="text-xl font-bold text-white mb-1">Create Whiteboard</h3>
-            <p className="text-xs text-slate-400 mb-6">
-              Give your new real-time canvas room a title.
-            </p>
-
-            <form onSubmit={handleCreateBoard} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">
-                  Board Title
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Sprint Architecture Design"
-                  value={newBoardTitle}
-                  onChange={(e) => setNewBoardTitle(e.target.value)}
-                  autoFocus
-                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500 transition"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-sm font-semibold text-slate-400 hover:text-white transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-lg transition"
-                >
-                  Create & Open
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
