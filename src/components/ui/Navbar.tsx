@@ -33,8 +33,8 @@ export const Navbar: React.FC = () => {
   return (
     <nav className="flex items-center justify-between px-8 py-4 bg-slate-900 border-b border-slate-800 text-white">
       <Link to="/" className="flex items-center gap-2 font-bold text-xl hover:opacity-90 transition">
-        <span className="text-2xl">🎨</span>
-        <span>RealTime WhiteBoard</span>
+        <span className="text-4xl">🎨</span>
+        <span className="text-3xl font-bold">Collab Canvas</span>
       </Link>
 
       <div className="flex items-center gap-6">
