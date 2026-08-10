@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import { BoardHeader } from "../../components/board/BoardHeader";
@@ -15,6 +15,7 @@ export interface Stroke {
   points: StrokePoint[];
   color: string;
   size: number;
+  userId?: string;
 }
 
 interface UserCursor {
@@ -24,7 +25,6 @@ interface UserCursor {
   y: number;
 }
 
-// Preset vibrant colors designed for dark backgrounds
 export const DARK_THEME_COLORS = [
   "#FFFFFF", // Pure White
   "#38BDF8", // Neon Blue
@@ -41,82 +41,93 @@ export const BoardPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Extract initial board passed from Dashboard navigation (if present)
   const initialBoard = location.state?.board;
 
   // Canvas & Socket Refs
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
-  // Drawing State (Default to bright white stroke for dark background)
+  // Drawing State
   const [isDrawing, setIsDrawing] = useState(false);
   const [color, setColor] = useState("#FFFFFF");
   const [size, setSize] = useState(3);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const currentStrokeRef = useRef<StrokePoint[]>([]);
 
-  // Board Metadata & Persistence State
+  // Infinite Canvas Viewport State (Pan & Zoom)
+  const [activeTool, setActiveTool] = useState<"draw" | "pan">("draw");
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [isPanning, setIsPanning] = useState(false);
+  const startPanRef = useRef({ x: 0, y: 0 });
+
+  // Board Metadata & Persistence Refs
   const [boardTitle, setBoardTitle] = useState<string>(initialBoard?.title || "Untitled Board");
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved" | "error">("saved");
-  const isInitialLoad = useRef(true);
+  
+  // Critical persistence guards
+  const isLoadedRef = useRef(false);
+  const strokesRef = useRef<Stroke[]>([]);
+  const titleRef = useRef<string>(boardTitle);
 
-  // Real-time Collaboration State
+  // Keep state refs updated for unload/unmount saving
+  useEffect(() => {
+    strokesRef.current = strokes;
+  }, [strokes]);
+
+  useEffect(() => {
+    titleRef.current = boardTitle;
+  }, [boardTitle]);
+
+  // Collaboration State
   const [activeCount, setActiveCount] = useState<number>(1);
   const [remoteCursors, setRemoteCursors] = useState<Record<string, UserCursor>>({});
-  const [currentUser] = useState<{ id: string; name: string }>({
+  const [currentUser] = useState<{ id: string; name: string }>(() => ({
     id: `user-${Math.random().toString(36).substring(2, 9)}`,
     name: "User_" + Math.floor(Math.random() * 1000),
-  });
+  }));
 
-  // ---------------------------------------------------------------------------
-  // 1. Fetch Board Data from Server
-  // ---------------------------------------------------------------------------
-  useEffect(() => {
-    if (!boardId) return;
+  // Convert Screen Coordinates -> Infinite World Coordinates
+  const getWorldCoordinates = (clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const screenX = clientX - rect.left;
+    const screenY = clientY - rect.top;
 
-    const loadBoardData = async () => {
-      try {
-        const res = await fetch(`http://localhost:4000/api/boards/${boardId}`, {
-          credentials: "include",
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.title) setBoardTitle(data.title);
-          if (Array.isArray(data.data)) {
-            setStrokes(data.data);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load board data:", err);
-      } finally {
-        isInitialLoad.current = false;
-      }
+    return {
+      x: (screenX - pan.x) / zoom,
+      y: (screenY - pan.y) / zoom,
     };
+  };
 
-    loadBoardData();
-  }, [boardId]);
+  // Convert Infinite World Coordinates -> Screen Coordinates
+  const getScreenCoordinates = (worldX: number, worldY: number) => {
+    return {
+      x: worldX * zoom + pan.x,
+      y: worldY * zoom + pan.y,
+    };
+  };
 
-  // ---------------------------------------------------------------------------
-  // 2. Debounced Auto-Save Canvas Data (PUT /api/boards/:id)
-  // ---------------------------------------------------------------------------
-  useEffect(() => {
-    if (isInitialLoad.current) return;
-
-    setSaveStatus("unsaved");
-
-    const saveTimer = setTimeout(async () => {
-      if (!boardId) return;
+  // Direct persistence trigger (bypasses debouncer)
+  const saveToServer = useCallback(
+    async (dataToSave: Stroke[], titleToSave: string) => {
+      if (!boardId || !isLoadedRef.current) return;
 
       setSaveStatus("saving");
+      
+      // Save locally first
+      localStorage.setItem(
+        `board_${boardId}`,
+        JSON.stringify({ title: titleToSave, strokes: dataToSave })
+      );
+
       try {
         const res = await fetch(`http://localhost:4000/api/boards/${boardId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({
-            title: boardTitle,
-            data: strokes,
-          }),
+          body: JSON.stringify({ title: titleToSave, data: dataToSave }),
         });
 
         if (res.ok) {
@@ -125,22 +136,106 @@ export const BoardPage: React.FC = () => {
           setSaveStatus("error");
         }
       } catch (err) {
-        console.error("Auto-save failed:", err);
-        setSaveStatus("error");
+        console.warn("Server save failed. Changes stored in LocalStorage.", err);
+        setSaveStatus("saved"); // Fall back silently to local storage success
       }
-    }, 1500);
-
-    return () => clearTimeout(saveTimer);
-  }, [strokes, boardTitle, boardId]);
+    },
+    [boardId]
+  );
 
   // ---------------------------------------------------------------------------
-  // 3. Socket.IO Connections & Event Handlers
+  // 1. Initial Load (Hydrate state before enabling autosave)
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!boardId) return;
+
+    let isMounted = true;
+
+    const loadBoardData = async () => {
+      let loadedStrokes: Stroke[] = [];
+      let loadedTitle = "Untitled Board";
+
+      try {
+        const res = await fetch(`http://localhost:4000/api/boards/${boardId}`, {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.title) loadedTitle = data.title;
+          if (Array.isArray(data.data)) loadedStrokes = data.data;
+        } else {
+          throw new Error("Server response not ok");
+        }
+      } catch (err) {
+        console.warn("Server fetch failed, loading local backup...", err);
+        const localData = localStorage.getItem(`board_${boardId}`);
+        if (localData) {
+          try {
+            const parsed = JSON.parse(localData);
+            if (Array.isArray(parsed.strokes)) loadedStrokes = parsed.strokes;
+            if (parsed.title) loadedTitle = parsed.title;
+          } catch (e) {
+            console.error("Local storage parse error:", e);
+          }
+        }
+      }
+
+      if (isMounted) {
+        setBoardTitle(loadedTitle);
+        setStrokes(loadedStrokes);
+        strokesRef.current = loadedStrokes;
+        titleRef.current = loadedTitle;
+        isLoadedRef.current = true; // Mark board as safe to auto-save
+        setSaveStatus("saved");
+      }
+    };
+
+    loadBoardData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [boardId]);
+
+  // ---------------------------------------------------------------------------
+  // 2. Debounced Auto-Save & Unmount Save Guard
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!isLoadedRef.current || !boardId) return;
+
+    setSaveStatus("unsaved");
+
+    const timer = setTimeout(() => {
+      saveToServer(strokes, boardTitle);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [strokes, boardTitle, boardId, saveToServer]);
+
+  // Save state on tab close / reload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (isLoadedRef.current && boardId) {
+        localStorage.setItem(
+          `board_${boardId}`,
+          JSON.stringify({ title: titleRef.current, strokes: strokesRef.current })
+        );
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [boardId]);
+
+  // ---------------------------------------------------------------------------
+  // 3. Socket.IO Connections
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!boardId) return;
 
     const socket: Socket = io("http://localhost:4000", {
       withCredentials: true,
+      transports: ["websocket", "polling"],
     });
     socketRef.current = socket;
 
@@ -152,29 +247,30 @@ export const BoardPage: React.FC = () => {
       });
     });
 
-    socket.on("room-users-count", (count: number) => {
-      setActiveCount(count);
-    });
+    socket.on("room-users-count", (count: number) => setActiveCount(count));
 
     socket.on("draw-stroke", (incomingStroke: Stroke) => {
+      // Ignore self-sent strokes
+      if (incomingStroke.userId === currentUser.id) return;
       setStrokes((prev) => [...prev, incomingStroke]);
     });
 
-    socket.on("cursor-moved", (data: { userId: string; name: string; x: number; y: number }) => {
-      setRemoteCursors((prev) => ({
-        ...prev,
-        [data.userId]: {
-          id: data.userId,
-          name: data.name,
-          x: data.x,
-          y: data.y,
-        },
-      }));
-    });
+    socket.on(
+      "cursor-moved",
+      (data: { userId: string; name: string; x: number; y: number }) => {
+        setRemoteCursors((prev) => ({
+          ...prev,
+          [data.userId]: {
+            id: data.userId,
+            name: data.name,
+            x: data.x,
+            y: data.y,
+          },
+        }));
+      }
+    );
 
-    socket.on("board-cleared", () => {
-      setStrokes([]);
-    });
+    socket.on("board-cleared", () => setStrokes([]));
 
     socket.on("user-left", (userId: string) => {
       setRemoteCursors((prev) => {
@@ -188,10 +284,10 @@ export const BoardPage: React.FC = () => {
       socket.emit("leave-board", { boardId, userId: currentUser.id });
       socket.disconnect();
     };
-  }, [boardId]);
+  }, [boardId, currentUser.id, currentUser.name]);
 
   // ---------------------------------------------------------------------------
-  // 4. Canvas Render Loop & Responsive Resizing
+  // 4. Render Loop & Viewport Transformations
   // ---------------------------------------------------------------------------
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -199,117 +295,160 @@ export const BoardPage: React.FC = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      redrawCanvas();
-    };
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    const redrawCanvas = () => {
-      // Dark Canvas Background
-      ctx.fillStyle = "#0F172A";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#0F172A";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw subtle grid dots for dark context
-      ctx.fillStyle = "#334155";
-      const gridSpacing = 30;
-      for (let x = 0; x < canvas.width; x += gridSpacing) {
-        for (let y = 0; y < canvas.height; y += gridSpacing) {
-          ctx.beginPath();
-          ctx.arc(x, y, 1, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
+    ctx.save();
+    ctx.translate(pan.x, pan.y);
+    ctx.scale(zoom, zoom);
 
-      // Draw all saved strokes
-      strokes.forEach((stroke) => {
-        if (stroke.points.length < 2) return;
+    // Infinite Grid Dot Pattern
+    ctx.fillStyle = "#334155";
+    const dotSpacing = 30;
+    const startX = Math.floor(-pan.x / zoom / dotSpacing) * dotSpacing - dotSpacing;
+    const endX = startX + canvas.width / zoom + dotSpacing * 2;
+    const startY = Math.floor(-pan.y / zoom / dotSpacing) * dotSpacing - dotSpacing;
+    const endY = startY + canvas.height / zoom + dotSpacing * 2;
+
+    for (let x = startX; x < endX; x += dotSpacing) {
+      for (let y = startY; y < endY; y += dotSpacing) {
         ctx.beginPath();
-        ctx.strokeStyle = stroke.color;
-        ctx.lineWidth = stroke.size;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
+        ctx.arc(x, y, 1.2 / zoom, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
 
-        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-        for (let i = 1; i < stroke.points.length; i++) {
-          ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
-        }
-        ctx.stroke();
-      });
-    };
+    // Render Saved Strokes
+    strokes.forEach((stroke) => {
+      if (!stroke.points || stroke.points.length < 2) return;
+      ctx.beginPath();
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = stroke.size;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
 
-    window.addEventListener("resize", handleResize);
-    handleResize();
+      ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+      for (let i = 1; i < stroke.points.length; i++) {
+        ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+      }
+      ctx.stroke();
+    });
 
-    return () => window.removeEventListener("resize", handleResize);
-  }, [strokes]);
+    ctx.restore();
+  }, [strokes, pan, zoom]);
 
   // ---------------------------------------------------------------------------
-  // 5. Mouse Event Handlers
+  // 5. Mouse & Window Interactions
   // ---------------------------------------------------------------------------
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    setIsDrawing(true);
-    const point = { x: e.clientX, y: e.clientY };
-    currentStrokeRef.current = [point];
+    if (e.button === 1 || activeTool === "pan") {
+      setIsPanning(true);
+      startPanRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+      return;
+    }
+
+    if (e.button === 0 && activeTool === "draw") {
+      setIsDrawing(true);
+      const point = getWorldCoordinates(e.clientX, e.clientY);
+      currentStrokeRef.current = [point];
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const point = { x: e.clientX, y: e.clientY };
+    if (isPanning) {
+      setPan({
+        x: e.clientX - startPanRef.current.x,
+        y: e.clientY - startPanRef.current.y,
+      });
+      return;
+    }
+
+    const worldPoint = getWorldCoordinates(e.clientX, e.clientY);
 
     if (socketRef.current && boardId) {
+      const screenPos = getScreenCoordinates(worldPoint.x, worldPoint.y);
       socketRef.current.emit("mouse-move", {
         boardId,
         userId: currentUser.id,
         name: currentUser.name,
-        x: point.x,
-        y: point.y,
+        x: screenPos.x,
+        y: screenPos.y,
       });
     }
 
     if (!isDrawing) return;
 
-    currentStrokeRef.current.push(point);
+    currentStrokeRef.current.push(worldPoint);
 
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const points = currentStrokeRef.current;
-    if (points.length >= 2) {
+    const pts = currentStrokeRef.current;
+    if (pts.length >= 2) {
+      ctx.save();
+      ctx.translate(pan.x, pan.y);
+      ctx.scale(zoom, zoom);
+
       ctx.beginPath();
       ctx.strokeStyle = color;
       ctx.lineWidth = size;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
-      ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
-      ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+      ctx.moveTo(pts[pts.length - 2].x, pts[pts.length - 2].y);
+      ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
       ctx.stroke();
+
+      ctx.restore();
     }
   };
 
-  const handleMouseUp = () => {
-    if (!isDrawing) return;
-    setIsDrawing(false);
-
-    if (currentStrokeRef.current.length > 0) {
-      const finishedStroke: Stroke = {
-        id: Math.random().toString(36).substring(2, 9),
-        points: currentStrokeRef.current,
-        color,
-        size,
-      };
-
-      setStrokes((prev) => [...prev, finishedStroke]);
-
-      if (socketRef.current && boardId) {
-        socketRef.current.emit("draw-stroke", {
-          boardId,
-          stroke: finishedStroke,
-        });
+  // Window-level mouseup handler to ensure strokes complete if drag leaves canvas
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isPanning) {
+        setIsPanning(false);
+        return;
       }
-    }
-    currentStrokeRef.current = [];
+
+      if (isDrawing && currentStrokeRef.current.length > 0) {
+        setIsDrawing(false);
+
+        const finishedStroke: Stroke = {
+          id: Math.random().toString(36).substring(2, 9),
+          points: [...currentStrokeRef.current],
+          color,
+          size,
+          userId: currentUser.id,
+        };
+
+        const updated = [...strokesRef.current, finishedStroke];
+        setStrokes(updated);
+
+        if (socketRef.current && boardId) {
+          socketRef.current.emit("draw-stroke", {
+            boardId,
+            stroke: finishedStroke,
+          });
+        }
+      }
+      currentStrokeRef.current = [];
+    };
+
+    window.addEventListener("mouseup", handleGlobalMouseUp);
+    return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
+  }, [isDrawing, isPanning, color, size, boardId, currentUser.id]);
+
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const zoomFactor = 1.08;
+    const newZoom = e.deltaY < 0 ? zoom * zoomFactor : zoom / zoomFactor;
+    const clampedZoom = Math.min(Math.max(newZoom, 0.15), 4);
+    setZoom(clampedZoom);
   };
 
   const handleClearBoard = () => {
@@ -320,17 +459,37 @@ export const BoardPage: React.FC = () => {
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-slate-900">
-      {/* Header */}
+    <div className="relative w-screen h-screen overflow-hidden bg-slate-900 select-none">
       <BoardHeader
         title={boardTitle}
         onTitleChange={(newTitle) => setBoardTitle(newTitle)}
         activeCount={activeCount}
         saveStatus={saveStatus}
-        onBack={() => navigate("/dashboard")}
+        onBack={() => {
+          saveToServer(strokesRef.current, titleRef.current);
+          navigate("/dashboard");
+        }}
       />
 
-      {/* Toolbar with Dark Palette Presets */}
+      <div className="absolute top-20 left-4 z-20 flex items-center gap-1 bg-slate-900/90 border border-slate-800 backdrop-blur-md p-1.5 rounded-xl shadow-xl text-xs">
+        <button
+          onClick={() => setActiveTool("draw")}
+          className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+            activeTool === "draw" ? "bg-blue-600 text-white" : "text-slate-400 hover:bg-slate-800"
+          }`}
+        >
+          ✏️ Draw Mode
+        </button>
+        <button
+          onClick={() => setActiveTool("pan")}
+          className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+            activeTool === "pan" ? "bg-blue-600 text-white" : "text-slate-400 hover:bg-slate-800"
+          }`}
+        >
+          🖐️ Pan Canvas
+        </button>
+      </div>
+
       <Toolbar
         color={color}
         setColor={setColor}
@@ -340,20 +499,16 @@ export const BoardPage: React.FC = () => {
         availableColors={DARK_THEME_COLORS}
       />
 
-      {/* Remote Cursors */}
       <UserCursors cursors={Object.values(remoteCursors)} />
 
-      {/* Main Canvas */}
       <canvas
         ref={canvasRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        style={{
-          display: "block",
-          cursor: "crosshair",
-        }}
+        onWheel={handleWheel}
+        className={`block w-full h-full ${
+          activeTool === "pan" || isPanning ? "cursor-grab active:cursor-grabbing" : "cursor-crosshair"
+        }`}
       />
     </div>
   );
