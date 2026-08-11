@@ -1,21 +1,13 @@
+// src/components/dashboard/Sidebar.tsx
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
-interface SidebarProps {
-  user?: {
-    name: string;
-    email: string;
-    avatarUrl?: string;
-  };
-  onLogout?: () => void;
-}
-
-export const Sidebar: React.FC<SidebarProps> = ({
-  user = { name: "Ashish", email: "ashish@example.com" },
-  onLogout,
-}) => {
+export const Sidebar: React.FC = () => {
+  const { user, setUser } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navItems = [
     {
@@ -41,7 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/shared",
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20H2v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
       ),
     },
@@ -57,27 +49,48 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
   ];
 
+  const userName = user?.displayName || user?.name || "Guest User";
+  const userInitial = userName.charAt(0).toUpperCase();
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        setUser(null);
+        navigate("/login");
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
   return (
     <aside
-      className={`h-screen bg-slate-900 border-r border-slate-800 flex flex-col justify-between transition-all duration-300 z-40 relative select-none ${
+      className={`h-full bg-slate-900 border-r border-slate-800 flex flex-col justify-between transition-all duration-300 z-40 relative select-none shrink-0 ${
         isCollapsed ? "w-20" : "w-64"
       }`}
     >
-      {/* Top Header & Logo */}
-      <div>
-        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800">
+      {/* Top Header & Links Wrapper with Scroll support */}
+      <div className="flex flex-col flex-1 overflow-y-auto">
+        {/* Top Header & Branding */}
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800 shrink-0">
           {!isCollapsed && (
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-500/20">
+              {/* <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-500/20">
                 W
-              </div>
+              </div> */}
               <span className="text-slate-50 font-bold text-lg tracking-wide">
-                BoardCraft
+          
               </span>
             </div>
           )}
 
-          {/* Toggle Collapse Button */}
+          {/* Collapse Toggle Button */}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className={`p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer ${
@@ -128,42 +141,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
       </div>
 
-      {/* User Profile Footer */}
-      <div className="p-3 border-t border-slate-800">
+      {/* Profile Footer - Pinned to Bottom */}
+      <div className="p-3 border-t border-slate-800 shrink-0 bg-slate-900">
         <div className="flex items-center justify-between p-2 rounded-xl bg-slate-800/40 border border-slate-800/60">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-9 h-9 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center text-slate-200 font-semibold text-sm shrink-0">
-              {user.avatarUrl ? (
-                <img
-                  src={user.avatarUrl}
-                  alt={user.name}
-                  className="w-full h-full rounded-full object-cover"
-                />
-              ) : (
-                user.name.charAt(0).toUpperCase()
-              )}
+            <div className="w-9 h-9 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-sm shrink-0">
+              {userInitial}
             </div>
 
             {!isCollapsed && (
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-semibold text-slate-200 truncate">
-                  {user.name}
+                  {userName}
                 </span>
                 <span className="text-xs text-slate-400 truncate">
-                  {user.email}
+                  {user?.email || "Not logged in"}
                 </span>
               </div>
             )}
           </div>
 
-          {!isCollapsed && onLogout && (
+          {!isCollapsed && user && (
             <button
-              onClick={onLogout}
-              className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+              onClick={handleLogout}
+              className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer shrink-0"
               title="Logout"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
               </svg>
             </button>
           )}
