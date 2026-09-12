@@ -4,6 +4,7 @@ import { io, Socket } from "socket.io-client";
 import { BoardHeader } from "../../components/board/BoardHeader";
 import { Toolbar } from "../../components/board/Toolbar";
 import { UserCursors } from "../../components/board/UserCursors";
+import { DARK_THEME_COLORS } from "../../constants/boardColors";
 
 export interface StrokePoint {
   x: number;
@@ -25,16 +26,12 @@ interface UserCursor {
   y: number;
 }
 
-export const DARK_THEME_COLORS = [
-  "#FFFFFF", // Pure White
-  "#38BDF8", // Neon Blue
-  "#4ADE80", // Emerald Green
-  "#F472B6", // Pink/Magenta
-  "#FB923C", // Bright Orange
-  "#C084FC", // Purple
-  "#FACC15", // Bright Yellow
-  "#F87171", // Soft Red
-];
+interface RemoteCursorPayload {
+  userId: string;
+  name: string;
+  x: number;
+  y: number;
+}
 
 export const BoardPage: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
@@ -127,7 +124,7 @@ export const BoardPage: React.FC = () => {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ title: titleToSave, data: dataToSave }),
+          body: JSON.stringify({ title: titleToSave, elements: dataToSave }),
         });
 
         if (res.ok) {
@@ -162,7 +159,11 @@ export const BoardPage: React.FC = () => {
         if (res.ok) {
           const data = await res.json();
           if (data.title) loadedTitle = data.title;
-          if (Array.isArray(data.data)) loadedStrokes = data.data;
+          if (Array.isArray(data.elements)) {
+            loadedStrokes = data.elements;
+          } else if (Array.isArray(data.data)) {
+            loadedStrokes = data.data;
+          }
         } else {
           throw new Error("Server response not ok");
         }
@@ -173,6 +174,8 @@ export const BoardPage: React.FC = () => {
           try {
             const parsed = JSON.parse(localData);
             if (Array.isArray(parsed.strokes)) loadedStrokes = parsed.strokes;
+            if (Array.isArray(parsed.elements)) loadedStrokes = parsed.elements;
+            if (Array.isArray(parsed.data)) loadedStrokes = parsed.data;
             if (parsed.title) loadedTitle = parsed.title;
           } catch (e) {
             console.error("Local storage parse error:", e);
@@ -255,20 +258,17 @@ export const BoardPage: React.FC = () => {
       setStrokes((prev) => [...prev, incomingStroke]);
     });
 
-    socket.on(
-      "cursor-moved",
-      (data: { userId: string; name: string; x: number; y: number }) => {
-        setRemoteCursors((prev) => ({
-          ...prev,
-          [data.userId]: {
-            id: data.userId,
-            name: data.name,
-            x: data.x,
-            y: data.y,
-          },
-        }));
-      }
-    );
+    socket.on("cursor-moved", (data: RemoteCursorPayload) => {
+      setRemoteCursors((prev) => ({
+        ...prev,
+        [data.userId]: {
+          id: data.userId,
+          name: data.name,
+          x: data.x,
+          y: data.y,
+        },
+      }));
+    });
 
     socket.on("board-cleared", () => setStrokes([]));
 

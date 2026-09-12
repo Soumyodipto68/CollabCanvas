@@ -63,11 +63,13 @@ export const DashboardPage: React.FC = () => {
       });
 
       if (res.ok) {
-        const newBoard: Board = await res.json();
+        const createdBoard = await res.json();
+        const newBoard: Board = createdBoard.board ?? createdBoard;
+
         setNewBoardTitle("");
         setIsModalOpen(false);
         setBoards((prev) => [newBoard, ...prev]);
-        navigate(`/board/${newBoard.boardId || newBoard.id}`, { state: { board: newBoard } });
+        navigate(`/board/${newBoard.id}`, { state: { board: newBoard } });
       }
     } catch (err) {
       console.error("Failed to create board:", err);

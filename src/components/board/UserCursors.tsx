@@ -2,22 +2,22 @@
 import React from "react";
 
 export interface UserCursor {
-  userId: string;
+  id: string;
   name: string;
   x: number;
   y: number;
 }
 
 interface UserCursorsProps {
-  cursors: { [key: string]: UserCursor };
+  cursors: UserCursor[];
 }
 
 export const UserCursors: React.FC<UserCursorsProps> = ({ cursors }) => {
   return (
     <>
-      {Object.values(cursors).map((c) => (
+      {cursors.map((c) => (
         <div
-          key={c.userId}
+          key={c.id}
           className="absolute pointer-events-none transition-all duration-75 ease-out z-30"
           style={{ left: `${c.x}px`, top: `${c.y}px` }}
         >
