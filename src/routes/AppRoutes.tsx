@@ -4,6 +4,7 @@ import Home from "../pages/Home/Home";
 import Login from "../pages/Login/Login";
 import { DashboardPage } from "../pages/Dashboard/DashboardPage";
 import { RecentPage } from "../pages/Recent/RecentPage";
+import { SharedPage } from "../pages/Shared/SharedPage";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { BoardPage } from "../pages/Board/BoardPage";
 
@@ -16,6 +17,7 @@ const AppRoutes = () => {
       <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/recent" element={<RecentPage />} />
+            <Route path="/shared" element={<SharedPage />} />
             <Route path="/board/:boardId" element={<BoardPage />} />
       </Route>
     </Routes>
