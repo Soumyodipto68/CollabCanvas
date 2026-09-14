@@ -6,6 +6,7 @@ interface BoardHeaderProps {
   activeCount: number;
   saveStatus: "saved" | "saving" | "unsaved" | "error";
   onBack: () => void;
+  onShare?: (email: string) => Promise<void> | void;
 }
 
 export const BoardHeader: React.FC<BoardHeaderProps> = ({
@@ -14,9 +15,14 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
   activeCount,
   saveStatus,
   onBack,
+  onShare,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState(title);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [shareEmail, setShareEmail] = useState("");
+  const [shareError, setShareError] = useState("");
+  const [shareSuccess, setShareSuccess] = useState("");
 
   const handleTitleSubmit = () => {
     setIsEditing(false);
@@ -42,6 +48,27 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
   };
 
   const status = getSaveStatusBadge();
+
+  const handleShareSubmit = async () => {
+    if (!onShare) return;
+
+    const email = shareEmail.trim();
+    if (!email) {
+      setShareError("Enter a valid email address.");
+      return;
+    }
+
+    try {
+      setShareError("");
+      setShareSuccess("");
+      await onShare(email);
+      setShareSuccess(`Board shared with ${email}`);
+      setShareEmail("");
+      setIsShareOpen(false);
+    } catch (error) {
+      setShareError(error instanceof Error ? error.message : "Unable to share the board right now.");
+    }
+  };
 
   return (
     <header className="absolute top-0 left-0 right-0 h-16 bg-slate-900/85 backdrop-blur-md border-b border-slate-700 flex items-center justify-between px-5 z-50 text-slate-50">
@@ -82,11 +109,62 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
         </div>
       </div>
 
-      {/* Right Section: Active Users Counter */}
-      <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full text-xs text-slate-400 font-medium">
-        <span className="w-2 h-2 bg-emerald-500 rounded-full inline-block shadow-[0_0_8px_#10B981]" />
-        <span className="text-slate-50 font-semibold">{activeCount}</span>
-        {activeCount === 1 ? "User" : "Users"} Online
+      {/* Right Section: Share + Active Users Counter */}
+      <div className="flex items-center gap-3">
+        {onShare && (
+          <div className="relative">
+            <button
+              onClick={() => {
+                setShareError("");
+                setShareSuccess("");
+                setIsShareOpen((prev) => !prev);
+              }}
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white border border-blue-400/40 rounded-xl px-3.5 py-2.5 text-xs font-bold cursor-pointer shadow-lg shadow-blue-500/20 transition-all duration-200"
+            >
+              <span className="text-sm">🔗</span>
+              <span>Share</span>
+            </button>
+
+            {isShareOpen && (
+              <div className="absolute right-0 top-12 w-80 bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-2xl z-[60]">
+                <label className="block mb-2 text-xs font-medium text-slate-300">
+                  Share with user email
+                </label>
+                <input
+                  type="email"
+                  value={shareEmail}
+                  onChange={(e) => setShareEmail(e.target.value)}
+                  placeholder="friend@example.com"
+                  className="w-full px-3 py-2 rounded-md border border-slate-700 bg-slate-900 text-slate-50 text-sm outline-none focus:border-blue-500"
+                />
+
+                {shareError && <p className="mt-2 text-xs text-red-400">{shareError}</p>}
+                {shareSuccess && <p className="mt-2 text-xs text-emerald-400">{shareSuccess}</p>}
+
+                <div className="mt-3 flex justify-end gap-2">
+                  <button
+                    onClick={() => setIsShareOpen(false)}
+                    className="px-3 py-1.5 rounded-md border border-slate-600 text-slate-300 hover:bg-slate-700 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleShareSubmit}
+                    className="px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-500 cursor-pointer"
+                  >
+                    Share
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full text-xs text-slate-400 font-medium">
+          <span className="w-2 h-2 bg-emerald-500 rounded-full inline-block shadow-[0_0_8px_#10B981]" />
+          <span className="text-slate-50 font-semibold">{activeCount}</span>
+          {activeCount === 1 ? "User" : "Users"} Online
+        </div>
       </div>
     </header>
   );

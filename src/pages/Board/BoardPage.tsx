@@ -458,6 +458,26 @@ export const BoardPage: React.FC = () => {
     }
   };
 
+  const handleShareBoard = async (email: string) => {
+    if (!boardId) {
+      throw new Error("Board is not available to share.");
+    }
+
+    const response = await fetch(`http://localhost:4000/api/boards/${boardId}/share`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.message || "Unable to share the board.");
+    }
+
+    return data;
+  };
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-slate-900 select-none">
       <BoardHeader
@@ -469,6 +489,7 @@ export const BoardPage: React.FC = () => {
           saveToServer(strokesRef.current, titleRef.current);
           navigate("/dashboard");
         }}
+        onShare={handleShareBoard}
       />
 
       <div className="absolute top-20 left-4 z-20 flex items-center gap-1 bg-slate-900/90 border border-slate-800 backdrop-blur-md p-1.5 rounded-xl shadow-xl text-xs">
