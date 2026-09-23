@@ -6,6 +6,7 @@ import { DashboardPage } from "../pages/Dashboard/DashboardPage";
 import { RecentPage } from "../pages/Recent/RecentPage";
 import { SharedPage } from "../pages/Shared/SharedPage";
 import { SettingsPage } from "../pages/Settings/SettingsPage";
+import { ProfilePage } from "../pages/Profile/ProfilePage";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { BoardPage } from "../pages/Board/BoardPage";
 
@@ -20,6 +21,7 @@ const AppRoutes = () => {
             <Route path="/recent" element={<RecentPage />} />
             <Route path="/shared" element={<SharedPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/board/:boardId" element={<BoardPage />} />
       </Route>
     </Routes>

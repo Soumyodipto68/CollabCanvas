@@ -66,7 +66,11 @@ export const Navbar: React.FC = () => {
           </div>
         ) : activeUser ? (
           <div className="flex items-center gap-4 pl-2 border-l border-slate-800">
-            <div className="flex items-center gap-3">
+            <Link
+              to="/profile"
+              aria-label={`Open profile for ${displayName}`}
+              className="flex items-center gap-3 rounded-lg p-1 transition hover:bg-slate-800/60"
+            >
               {rawProfilePic && !imgError ? (
                 <img
                   src={rawProfilePic}
@@ -82,7 +86,7 @@ export const Navbar: React.FC = () => {
               <span className="text-sm font-medium text-slate-200 hidden sm:inline">
                 {displayName}
               </span>
-            </div>
+            </Link>
             <button
               onClick={handleLogout}
               className="px-4 py-2 text-sm font-semibold text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-lg transition shadow-sm cursor-pointer"
