@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Mail, Settings, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Navbar } from "../../components/ui/Navbar";
@@ -9,6 +9,7 @@ export const ProfilePage: React.FC = () => {
   const { user } = useAuth();
   const displayName = user?.displayName || user?.name || "User";
   const initial = displayName.charAt(0).toUpperCase();
+  const [imageError, setImageError] = useState(false);
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-slate-900 text-slate-100">
@@ -25,9 +26,19 @@ export const ProfilePage: React.FC = () => {
 
             <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/40">
               <div className="flex flex-col items-center gap-5 border-b border-slate-800 px-5 py-8 sm:flex-row sm:px-8">
-                <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border border-blue-500/30 bg-blue-500/10 text-4xl font-bold text-blue-300 ring-8 ring-blue-500/5">
-                  {initial}
-                </div>
+                {user?.avatar && !imageError ? (
+                  <img
+                    src={user.avatar}
+                    alt={displayName}
+                    referrerPolicy="no-referrer"
+                    onError={() => setImageError(true)}
+                    className="h-24 w-24 shrink-0 rounded-full object-cover ring-8 ring-blue-500/5"
+                  />
+                ) : (
+                  <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border border-blue-500/30 bg-blue-500/10 text-4xl font-bold text-blue-300 ring-8 ring-blue-500/5">
+                    {initial}
+                  </div>
+                )}
                 <div className="text-center sm:text-left">
                   <h2 className="text-2xl font-semibold text-slate-50">{displayName}</h2>
                   <p className="mt-1 text-sm text-slate-400">Whiteboard collaborator</p>

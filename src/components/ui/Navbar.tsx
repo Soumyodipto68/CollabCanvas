@@ -75,6 +75,7 @@ export const Navbar: React.FC = () => {
                 <img
                   src={rawProfilePic}
                   alt={displayName}
+                  referrerPolicy="no-referrer"
                   onError={() => setImgError(true)}
                   className="w-9 h-9 rounded-full object-cover ring-2 ring-blue-500/30 bg-slate-800"
                 />

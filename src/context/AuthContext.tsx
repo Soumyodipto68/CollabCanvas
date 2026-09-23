@@ -6,6 +6,7 @@ interface User {
   name?: string;
   displayName?: string;
   email: string;
+  avatar?: string | null;
 }
 
 interface AuthContextType {
