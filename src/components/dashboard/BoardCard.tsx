@@ -1,7 +1,7 @@
 import React from "react";
 import { Pin } from "lucide-react";
 
-export interface Board {
+interface BoardCardData {
   id: string;
   title: string;
   createdAt: string;
@@ -10,8 +10,8 @@ export interface Board {
 }
 
 interface BoardCardProps {
-  board: Board;
-  onSelect: (board: Board) => void;
+  board: BoardCardData;
+  onSelect: (board: BoardCardData) => void;
   onDelete: (e: React.MouseEvent, id: string) => void;
   onTogglePin: (e: React.MouseEvent, id: string) => void;
 }
@@ -29,7 +29,7 @@ export const BoardCard: React.FC<BoardCardProps> = ({ board, onSelect, onDelete,
             type="button"
             aria-label={board.pinned ? `Unpin ${board.title}` : `Pin ${board.title}`}
             aria-pressed={board.pinned}
-            onClick={(e) => onTogglePin(e, board.id)}
+            onClick={(event) => onTogglePin(event, board.id)}
             className={`shrink-0 rounded-lg p-1.5 transition-colors ${board.pinned ? "text-blue-400 hover:bg-blue-500/10" : "text-slate-500 hover:bg-slate-700 hover:text-slate-200"}`}
           >
             <Pin className="h-4 w-4" fill={board.pinned ? "currentColor" : "none"} />
