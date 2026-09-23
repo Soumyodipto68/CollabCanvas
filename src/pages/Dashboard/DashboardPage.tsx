@@ -16,6 +16,7 @@ interface Board {
   title: string;
   createdAt?: string;
   updatedAt?: string;
+  pinned?: boolean;
 }
 
 export const DashboardPage: React.FC = () => {
@@ -96,6 +97,29 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
+  const handleTogglePin = async (e: React.MouseEvent, boardId: string) => {
+    e.stopPropagation();
+
+    try {
+      const res = await fetch(`http://localhost:4000/api/boards/${boardId}/pin`, {
+        method: "PATCH",
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        const updatedBoard = await res.json();
+        setBoards((prev) => {
+          const nextBoards = prev.map((board) =>
+            board.id === boardId ? { ...board, pinned: updatedBoard.pinned } : board
+          );
+          return nextBoards.sort((first, second) => Number(Boolean(second.pinned)) - Number(Boolean(first.pinned)));
+        });
+      }
+    } catch (err) {
+      console.error("Failed to update board pin:", err);
+    }
+  };
+
   // Filter boards dynamically based on search query
   const filteredBoards = boards.filter((board) =>
     board.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -138,6 +162,7 @@ export const DashboardPage: React.FC = () => {
                       })
                     }
                     onDelete={(e) => handleDeleteBoard(e, board.boardId || board.id)}
+                    onTogglePin={(e) => handleTogglePin(e, board.boardId || board.id)}
                   />
                 ))}
               </div>
