@@ -5,6 +5,10 @@ interface CreateBoardModalProps {
   onClose: () => void;
   title: string;
   setTitle: (title: string) => void;
+  details: string;
+  setDetails: (details: string) => void;
+  priority: "low" | "medium" | "high";
+  setPriority: (priority: "low" | "medium" | "high") => void;
   onSubmit: (e: React.FormEvent) => void;
   isCreating: boolean;
 }
@@ -14,6 +18,10 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({
   onClose,
   title,
   setTitle,
+  details,
+  setDetails,
+  priority,
+  setPriority,
   onSubmit,
   isCreating,
 }) => {
@@ -53,6 +61,34 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({
               autoFocus
               className="w-full px-4 py-3 rounded-lg border border-slate-700 bg-slate-900 text-slate-50 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 box-border transition-all"
             />
+          </div>
+
+          <div className="mb-5">
+            <label className="block mb-2 text-sm text-slate-400">
+              Board Details
+            </label>
+            <textarea
+              rows={3}
+              placeholder="Add a quick summary, notes, or goals for this board..."
+              value={details}
+              onChange={(e) => setDetails(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border border-slate-700 bg-slate-900 text-slate-50 text-sm outline-none resize-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 box-border transition-all"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block mb-2 text-sm text-slate-400">
+              Priority
+            </label>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as "low" | "medium" | "high")}
+              className="w-full px-4 py-3 rounded-lg border border-slate-700 bg-slate-900 text-slate-50 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 box-border transition-all"
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
           </div>
 
           <div className="flex gap-3 justify-end">

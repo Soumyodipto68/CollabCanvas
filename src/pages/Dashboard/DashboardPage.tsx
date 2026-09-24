@@ -14,6 +14,8 @@ interface Board {
   id: string;
   boardId?: string;
   title: string;
+  details?: string | null;
+  priority?: "low" | "medium" | "high";
   createdAt?: string;
   updatedAt?: string;
   pinned?: boolean;
@@ -24,6 +26,8 @@ export const DashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [newBoardTitle, setNewBoardTitle] = useState("");
+  const [newBoardDetails, setNewBoardDetails] = useState("");
+  const [newBoardPriority, setNewBoardPriority] = useState<"low" | "medium" | "high">("medium");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const navigate = useNavigate();
@@ -60,7 +64,11 @@ export const DashboardPage: React.FC = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ title: titleToCreate }),
+        body: JSON.stringify({
+          title: titleToCreate,
+          details: newBoardDetails.trim(),
+          priority: newBoardPriority,
+        }),
       });
 
       if (res.ok) {
@@ -68,6 +76,8 @@ export const DashboardPage: React.FC = () => {
         const newBoard: Board = createdBoard.board ?? createdBoard;
 
         setNewBoardTitle("");
+        setNewBoardDetails("");
+        setNewBoardPriority("medium");
         setIsModalOpen(false);
         setBoards((prev) => [newBoard, ...prev]);
         navigate(`/board/${newBoard.id}`, { state: { board: newBoard } });
@@ -172,9 +182,18 @@ export const DashboardPage: React.FC = () => {
           {/* Modal for board creation */}
           <CreateBoardModal
             isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
+            onClose={() => {
+              setIsModalOpen(false);
+              setNewBoardTitle("");
+              setNewBoardDetails("");
+              setNewBoardPriority("medium");
+            }}
             title={newBoardTitle}
             setTitle={setNewBoardTitle}
+            details={newBoardDetails}
+            setDetails={setNewBoardDetails}
+            priority={newBoardPriority}
+            setPriority={setNewBoardPriority}
             onSubmit={handleCreateBoard}
             isCreating={isCreating}
           />
