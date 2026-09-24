@@ -7,7 +7,7 @@ import { SearchBarControls } from "../../components/dashboard/SearchBarControls"
 import { BoardCard } from "../../components/dashboard/BoardCard";
 import { EmptyState } from "../../components/dashboard/EmptyState";
 import { CreateBoardModal } from "../../components/dashboard/CreateBoardModal";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 // Define Board interface locally or import from your types
 interface Board {
@@ -31,10 +31,11 @@ export const DashboardPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     fetchBoards();
-  }, []);
+  }, [location.key]);
 
   const fetchBoards = async () => {
     try {

@@ -120,7 +120,12 @@ export const BoardPage: React.FC = () => {
       // Save locally first
       localStorage.setItem(
         `board_${boardId}`,
-        JSON.stringify({ title: titleToSave, strokes: dataToSave })
+        JSON.stringify({
+          title: titleToSave,
+          details: boardDetails,
+          priority: boardPriority,
+          strokes: dataToSave,
+        })
       );
 
       try {
@@ -146,7 +151,7 @@ export const BoardPage: React.FC = () => {
         setSaveStatus("saved"); // Fall back silently to local storage success
       }
     },
-    [boardId]
+    [boardId, boardDetails, boardPriority]
   );
 
   // ---------------------------------------------------------------------------
@@ -192,6 +197,10 @@ export const BoardPage: React.FC = () => {
             if (Array.isArray(parsed.elements)) loadedStrokes = parsed.elements;
             if (Array.isArray(parsed.data)) loadedStrokes = parsed.data;
             if (parsed.title) loadedTitle = parsed.title;
+            if (typeof parsed.details === "string") loadedDetails = parsed.details;
+            if (parsed.priority === "low" || parsed.priority === "medium" || parsed.priority === "high") {
+              loadedPriority = parsed.priority;
+            }
           } catch (e) {
             console.error("Local storage parse error:", e);
           }
@@ -238,7 +247,12 @@ export const BoardPage: React.FC = () => {
       if (isLoadedRef.current && boardId) {
         localStorage.setItem(
           `board_${boardId}`,
-          JSON.stringify({ title: titleRef.current, strokes: strokesRef.current })
+          JSON.stringify({
+            title: titleRef.current,
+            details: boardDetails,
+            priority: boardPriority,
+            strokes: strokesRef.current,
+          })
         );
       }
     };
@@ -538,7 +552,17 @@ export const BoardPage: React.FC = () => {
         saveStatus={saveStatus}
         onBack={() => {
           saveToServer(strokesRef.current, titleRef.current);
-          navigate("/dashboard");
+          navigate("/dashboard", {
+            state: {
+              updatedBoard: {
+                id: boardId,
+                title: boardTitle,
+                details: boardDetails,
+                priority: boardPriority,
+                updatedAt: new Date().toISOString(),
+              },
+            },
+          });
         }}
         onShare={handleShareBoard}
         onEditBoard={handleEditBoard}
