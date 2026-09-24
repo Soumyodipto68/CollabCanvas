@@ -60,6 +60,10 @@ export const BoardPage: React.FC = () => {
 
   // Board Metadata & Persistence Refs
   const [boardTitle, setBoardTitle] = useState<string>(initialBoard?.title || "Untitled Board");
+  const [boardDetails, setBoardDetails] = useState<string>(initialBoard?.details || "");
+  const [boardPriority, setBoardPriority] = useState<"low" | "medium" | "high">(
+    initialBoard?.priority || "medium"
+  );
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved" | "error">("saved");
   
   // Critical persistence guards
@@ -124,7 +128,12 @@ export const BoardPage: React.FC = () => {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ title: titleToSave, elements: dataToSave }),
+          body: JSON.stringify({
+            title: titleToSave,
+            details: boardDetails,
+            priority: boardPriority,
+            elements: dataToSave,
+          }),
         });
 
         if (res.ok) {
@@ -151,6 +160,8 @@ export const BoardPage: React.FC = () => {
     const loadBoardData = async () => {
       let loadedStrokes: Stroke[] = [];
       let loadedTitle = "Untitled Board";
+      let loadedDetails = "";
+      let loadedPriority: "low" | "medium" | "high" = "medium";
 
       try {
         const res = await fetch(`http://localhost:4000/api/boards/${boardId}`, {
@@ -159,6 +170,10 @@ export const BoardPage: React.FC = () => {
         if (res.ok) {
           const data = await res.json();
           if (data.title) loadedTitle = data.title;
+          if (typeof data.details === "string") loadedDetails = data.details;
+          if (data.priority === "low" || data.priority === "medium" || data.priority === "high") {
+            loadedPriority = data.priority;
+          }
           if (Array.isArray(data.elements)) {
             loadedStrokes = data.elements;
           } else if (Array.isArray(data.data)) {
@@ -185,6 +200,8 @@ export const BoardPage: React.FC = () => {
 
       if (isMounted) {
         setBoardTitle(loadedTitle);
+        setBoardDetails(loadedDetails);
+        setBoardPriority(loadedPriority);
         setStrokes(loadedStrokes);
         strokesRef.current = loadedStrokes;
         titleRef.current = loadedTitle;
@@ -478,10 +495,44 @@ export const BoardPage: React.FC = () => {
     return data;
   };
 
+  const handleEditBoard = async (payload: { details: string; priority: "low" | "medium" | "high" }) => {
+    if (!boardId) {
+      throw new Error("Board is not available to update.");
+    }
+
+    const response = await fetch(`http://localhost:4000/api/boards/${boardId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        title: boardTitle,
+        details: payload.details,
+        priority: payload.priority,
+        elements: strokesRef.current,
+      }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.message || "Unable to update the board.");
+    }
+
+    setBoardDetails(typeof data.details === "string" ? data.details : payload.details);
+    setBoardPriority(
+      data.priority === "low" || data.priority === "medium" || data.priority === "high"
+        ? data.priority
+        : payload.priority
+    );
+
+    return data;
+  };
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-slate-900 select-none">
       <BoardHeader
         title={boardTitle}
+        details={boardDetails}
+        priority={boardPriority}
         onTitleChange={(newTitle) => setBoardTitle(newTitle)}
         activeCount={activeCount}
         saveStatus={saveStatus}
@@ -490,6 +541,7 @@ export const BoardPage: React.FC = () => {
           navigate("/dashboard");
         }}
         onShare={handleShareBoard}
+        onEditBoard={handleEditBoard}
       />
 
       <div className="absolute top-20 left-4 z-20 flex items-center gap-1 bg-slate-900/90 border border-slate-800 backdrop-blur-md p-1.5 rounded-xl shadow-xl text-xs">
