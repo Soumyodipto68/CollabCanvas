@@ -1,11 +1,12 @@
 // client_side/src/components/Navbar.tsx
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 export const Navbar: React.FC = () => {
   const { user, loading, setUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [imgError, setImgError] = useState(false);
 
   const activeUser = (user as any)?.user || user;
@@ -50,7 +51,7 @@ export const Navbar: React.FC = () => {
       </Link>
 
       <div className="flex items-center gap-6">
-        {activeUser && (
+        {activeUser && location.pathname !== "/dashboard" && (
           <Link
             to="/dashboard"
             className="px-3 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition"

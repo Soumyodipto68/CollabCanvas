@@ -29,6 +29,15 @@ export const Sidebar: React.FC = () => {
       ),
     },
     {
+      label: "Priority",
+      path: "/priority",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3l2.09 4.26L19 8l-3.5 3.41L16.18 16 12 13.77 7.82 16l.68-4.59L5 8l4.91-.74L12 3z" />
+        </svg>
+      ),
+    },
+    {
       label: "Shared with Me",
       path: "/shared",
       icon: (
