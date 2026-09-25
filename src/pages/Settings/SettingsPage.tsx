@@ -82,7 +82,7 @@ export const SettingsPage: React.FC = () => {
   const initial = name.charAt(0).toUpperCase();
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-slate-900 text-slate-100">
+    <div className="workspace-shell flex h-screen flex-col overflow-hidden">
       <Navbar />
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <Sidebar />

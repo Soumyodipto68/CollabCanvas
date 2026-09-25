@@ -113,7 +113,7 @@ export const SharedPage: React.FC = () => {
   }, [boards, searchQuery]);
 
   return (
-    <div className="flex flex-col h-screen bg-slate-900 text-slate-100 overflow-hidden">
+    <div className="workspace-shell flex flex-col h-screen overflow-hidden">
       <Navbar />
 
       <div className="flex flex-1 h-[calc(100vh-64px)] overflow-hidden">
