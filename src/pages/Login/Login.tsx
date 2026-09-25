@@ -26,7 +26,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#111827] px-6">
+    <div className="login-shell flex min-h-screen items-center justify-center px-6">
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur shadow-2xl">
         <h1 className="text-center text-3xl font-bold text-white">
           Welcome Back
@@ -38,7 +38,7 @@ const Login: React.FC = () => {
 
         <button
           onClick={onGoogleClick}
-          className="mt-8 flex w-full items-center justify-center gap-3 rounded-xl bg-white py-3 font-semibold text-black transition hover:scale-[1.02] cursor-pointer"
+          className="mt-8 flex w-full items-center justify-center bg-white gap-3   rounded-xl bg- py-3 font-semibold text-black transition hover:scale-[1.02] cursor-pointer"
         >
           <FcGoogle size={24} />
           Continue with Google

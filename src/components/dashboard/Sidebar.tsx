@@ -6,6 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 export const Sidebar: React.FC = () => {
   const { user, setUser } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -60,6 +61,7 @@ export const Sidebar: React.FC = () => {
 
   const userName = user?.displayName || user?.name || "Guest User";
   const userInitial = userName.charAt(0).toUpperCase();
+  const profilePicture = user?.avatar;
 
   const handleLogout = async () => {
     try {
@@ -80,7 +82,7 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside
-      className={`h-full bg-slate-900 border-r border-slate-800 flex flex-col justify-between transition-all duration-300 z-40 relative select-none shrink-0 ${
+      className={`workspace-sidebar h-full flex flex-col justify-between transition-all duration-300 z-40 relative select-none shrink-0 ${
         isCollapsed ? "w-20" : "w-64"
       }`}
     >
@@ -154,9 +156,19 @@ export const Sidebar: React.FC = () => {
       <div className="p-3 border-t border-slate-800 shrink-0 bg-slate-900">
         <div className="flex items-center justify-between p-2 rounded-xl bg-slate-800/40 border border-slate-800/60">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-9 h-9 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-sm shrink-0">
-              {userInitial}
-            </div>
+            {profilePicture && !imageError ? (
+              <img
+                src={profilePicture}
+                alt={`${userName} profile`}
+                referrerPolicy="no-referrer"
+                onError={() => setImageError(true)}
+                className="workspace-sidebar__avatar h-9 w-9 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <div className="workspace-sidebar__avatar flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold">
+                {userInitial}
+              </div>
+            )}
 
             {!isCollapsed && (
               <div className="flex flex-col min-w-0">
@@ -172,8 +184,10 @@ export const Sidebar: React.FC = () => {
 
           {!isCollapsed && user && (
             <button
+              type="button"
               onClick={handleLogout}
-              className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer shrink-0"
+              aria-label="Log out"
+              className="workspace-sidebar__logout shrink-0 cursor-pointer rounded-lg p-2 transition-colors"
               title="Logout"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

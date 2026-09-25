@@ -9,7 +9,8 @@ interface BoardHeaderProps {
   saveStatus: "saved" | "saving" | "unsaved" | "error";
   onBack: () => void;
   onShare?: (email: string) => Promise<void> | void;
-  onEditBoard?: (payload: { details: string; priority: "low" | "medium" | "high" }) => Promise<void> | void;
+  onEditBoard?: (payload: { details: string; priority?: "low" | "medium" | "high" }) => Promise<void> | void;
+  canEditPriority?: boolean;
 }
 
 export const BoardHeader: React.FC<BoardHeaderProps> = ({
@@ -22,6 +23,7 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
   onBack,
   onShare,
   onEditBoard,
+  canEditPriority = true,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState(title);
@@ -100,7 +102,7 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
       setEditSuccess("");
       await onEditBoard({
         details: tempDetails.trim(),
-        priority: tempPriority,
+        ...(canEditPriority ? { priority: tempPriority } : {}),
       });
       setEditSuccess("Board updated successfully");
       setIsEditOpen(false);
@@ -188,6 +190,7 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
                 </label>
                 <select
                   value={tempPriority}
+                  disabled={!canEditPriority}
                   onChange={(e) => setTempPriority(e.target.value as "low" | "medium" | "high")}
                   className="w-full px-3 py-2 rounded-md border border-slate-700 bg-slate-900 text-slate-50 text-sm outline-none focus:border-blue-500"
                 >

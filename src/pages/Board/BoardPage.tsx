@@ -5,6 +5,7 @@ import { BoardHeader } from "../../components/board/BoardHeader";
 import { Toolbar } from "../../components/board/Toolbar";
 import { UserCursors } from "../../components/board/UserCursors";
 import { DARK_THEME_COLORS } from "../../constants/boardColors";
+import { useAuth } from "../../context/AuthContext";
 
 export interface StrokePoint {
   x: number;
@@ -37,6 +38,7 @@ export const BoardPage: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   const initialBoard = location.state?.board;
 
@@ -63,6 +65,9 @@ export const BoardPage: React.FC = () => {
   const [boardDetails, setBoardDetails] = useState<string>(initialBoard?.details || "");
   const [boardPriority, setBoardPriority] = useState<"low" | "medium" | "high">(
     initialBoard?.priority || "medium"
+  );
+  const [boardOwnerId, setBoardOwnerId] = useState<string | null>(
+    initialBoard?.ownerId || initialBoard?.owner?.id || null
   );
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved" | "error">("saved");
   
@@ -136,7 +141,7 @@ export const BoardPage: React.FC = () => {
           body: JSON.stringify({
             title: titleToSave,
             details: boardDetails,
-            priority: boardPriority,
+            ...(user?.id && boardOwnerId === user.id ? { priority: boardPriority } : {}),
             elements: dataToSave,
           }),
         });
@@ -151,7 +156,7 @@ export const BoardPage: React.FC = () => {
         setSaveStatus("saved"); // Fall back silently to local storage success
       }
     },
-    [boardId, boardDetails, boardPriority]
+    [boardId, boardDetails, boardPriority, boardOwnerId, user?.id]
   );
 
   // ---------------------------------------------------------------------------
@@ -174,6 +179,7 @@ export const BoardPage: React.FC = () => {
         });
         if (res.ok) {
           const data = await res.json();
+          setBoardOwnerId(data.ownerId || data.owner?.id || null);
           if (data.title) loadedTitle = data.title;
           if (typeof data.details === "string") loadedDetails = data.details;
           if (data.priority === "low" || data.priority === "medium" || data.priority === "high") {
@@ -509,21 +515,28 @@ export const BoardPage: React.FC = () => {
     return data;
   };
 
-  const handleEditBoard = async (payload: { details: string; priority: "low" | "medium" | "high" }) => {
+  const handleEditBoard = async (payload: { details: string; priority?: "low" | "medium" | "high" }) => {
     if (!boardId) {
       throw new Error("Board is not available to update.");
     }
+
+    const isBoardOwner = Boolean(user?.id && boardOwnerId === user.id);
+    const updatePayload = isBoardOwner
+      ? {
+          title: boardTitle,
+          details: payload.details,
+          priority: payload.priority || boardPriority,
+          elements: strokesRef.current,
+        }
+      : {
+          details: payload.details,
+        };
 
     const response = await fetch(`http://localhost:4000/api/boards/${boardId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({
-        title: boardTitle,
-        details: payload.details,
-        priority: payload.priority,
-        elements: strokesRef.current,
-      }),
+      body: JSON.stringify(updatePayload),
     });
 
     const data = await response.json().catch(() => ({}));
@@ -535,14 +548,16 @@ export const BoardPage: React.FC = () => {
     setBoardPriority(
       data.priority === "low" || data.priority === "medium" || data.priority === "high"
         ? data.priority
-        : payload.priority
+      : payload.priority || boardPriority
     );
 
     return data;
   };
 
+  const canManageBoard = Boolean(user?.id && boardOwnerId === user.id);
+
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-slate-900 select-none">
+    <div className="board-shell relative w-screen h-screen overflow-hidden select-none">
       <BoardHeader
         title={boardTitle}
         details={boardDetails}
@@ -564,8 +579,9 @@ export const BoardPage: React.FC = () => {
             },
           });
         }}
-        onShare={handleShareBoard}
+        onShare={canManageBoard ? handleShareBoard : undefined}
         onEditBoard={handleEditBoard}
+        canEditPriority={canManageBoard}
       />
 
       <div className="absolute top-20 left-4 z-20 flex items-center gap-1 bg-slate-900/90 border border-slate-800 backdrop-blur-md p-1.5 rounded-xl shadow-xl text-xs">

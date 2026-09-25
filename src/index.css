@@ -213,3 +213,179 @@ body {
 		font-size: 48px;
 	}
 }
+
+.workspace-shell,
+.board-shell,
+.login-shell {
+	background: var(--color-surface-base);
+	color: var(--color-text-tertiary);
+}
+
+.workspace-shell main {
+	background: var(--color-surface-base);
+}
+
+.workspace-sidebar {
+	border-right: 1px solid var(--color-border);
+	background: var(--color-surface-raised);
+}
+
+.workspace-sidebar [class*="border-slate-800"] {
+	border-color: var(--color-border);
+}
+
+.workspace-sidebar [class*="bg-slate-900"] {
+	background: var(--color-surface-raised);
+}
+
+.workspace-sidebar [class*="bg-slate-800"] {
+	background: var(--color-surface-base);
+}
+
+.workspace-sidebar a {
+	border-radius: var(--radius-sm);
+}
+
+.workspace-sidebar a[class*="bg-blue-600"] {
+	border-color: rgb(255 60 0 / 35%);
+	background: rgb(255 60 0 / 12%);
+	color: var(--color-surface-muted);
+}
+
+.workspace-sidebar a:not([class*="bg-blue-600"]):hover {
+	background: var(--color-surface-base);
+	color: var(--color-text-inverse);
+}
+
+.workspace-sidebar button:hover {
+	background: var(--color-surface-base);
+	color: var(--color-text-inverse);
+}
+
+.workspace-sidebar__avatar {
+	border: 1px solid var(--color-border);
+	background: var(--color-surface-muted);
+	color: var(--color-text-inverse);
+}
+
+.workspace-sidebar__logout {
+	color: var(--color-text-primary);
+}
+
+.workspace-sidebar__logout:hover {
+	background: rgb(255 60 0 / 12%);
+	color: var(--color-surface-muted);
+}
+
+.workspace-shell [class*="bg-slate-950"],
+.workspace-shell [class*="bg-slate-900"] {
+	background: var(--color-surface-base);
+}
+
+.workspace-shell [class*="bg-slate-800"] {
+	background: var(--color-surface-raised);
+}
+
+.workspace-shell [class*="border-slate-800"],
+.workspace-shell [class*="border-slate-700"] {
+	border-color: var(--color-border);
+}
+
+.workspace-shell [class*="text-slate-50"],
+.workspace-shell [class*="text-slate-100"] {
+	color: var(--color-text-inverse);
+}
+
+.workspace-shell [class*="text-slate-200"],
+.workspace-shell [class*="text-slate-300"] {
+	color: var(--color-text-tertiary);
+}
+
+.workspace-shell [class*="text-slate-400"],
+.workspace-shell [class*="text-slate-500"] {
+	color: var(--color-text-primary);
+}
+
+.workspace-shell [class*="bg-blue-600"] {
+	background: var(--color-surface-muted);
+}
+
+.workspace-shell [class*="text-blue-400"],
+.workspace-shell [class*="text-blue-300"] {
+	color: var(--color-surface-muted);
+}
+
+.workspace-shell [class*="rounded-xl"],
+.workspace-shell [class*="rounded-2xl"] {
+	border-radius: var(--radius-md);
+}
+
+.workspace-shell input,
+.workspace-shell textarea,
+.workspace-shell select {
+	border-color: var(--color-border);
+	background: var(--color-surface-raised);
+	color: var(--color-text-inverse);
+}
+
+.workspace-shell input:focus,
+.workspace-shell textarea:focus,
+.workspace-shell select:focus {
+	border-color: var(--color-surface-muted);
+	outline: 2px solid rgb(255 177 153 / 35%);
+	outline-offset: 1px;
+}
+
+.workspace-shell button[class*="bg-blue-600"]:hover {
+	background: #d93200;
+}
+
+.workspace-shell button:disabled {
+	cursor: not-allowed;
+	opacity: 0.6;
+}
+
+.board-shell [class*="bg-slate-900"] {
+	background: var(--color-surface-base);
+}
+
+.board-shell [class*="bg-slate-800"] {
+	background: var(--color-surface-raised);
+}
+
+.board-shell [class*="border-slate-700"],
+.board-shell [class*="border-slate-800"] {
+	border-color: var(--color-border);
+}
+
+.board-shell [class*="bg-blue-600"] {
+	background: var(--color-surface-muted);
+}
+
+.board-shell [class*="text-blue-400"],
+.board-shell [class*="text-sky-400"] {
+	color: var(--color-surface-muted);
+}
+
+.login-shell {
+	padding-block: var(--space-4);
+}
+
+.login-shell > div {
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-surface-raised);
+	box-shadow: none;
+}
+
+.login-shell button {
+	min-height: 48px;
+	border-radius: var(--radius-sm);
+	background: var(--color-surface-muted);
+	color: var(--color-text-inverse);
+	transition: background var(--motion-fast);
+}
+
+.login-shell button:hover {
+	background: #d93200;
+}

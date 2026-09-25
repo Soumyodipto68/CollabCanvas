@@ -137,7 +137,7 @@ export const DashboardPage: React.FC = () => {
   );
 
   return (
-    <div className="flex flex-col h-screen bg-slate-900 text-slate-100 overflow-hidden">
+    <div className="workspace-shell flex flex-col h-screen overflow-hidden">
       {/* 1. Full-width Top Navbar */}
       <Navbar />
 
