@@ -3,28 +3,28 @@ import React from "react";
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="bg-slate-900 text-slate-400 py-12 px-6">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+    <footer className="home-footer px-6 py-12">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
         <div>
-          <div className="flex items-center gap-2 font-bold text-xl text-white mb-4">
-            <span className="text-2xl">🎨</span>
+          <div className="home-footer__brand mb-4 flex items-center gap-2 text-xl font-bold">
+            <span className="text-lg">✦</span>
             <span>RealTime WhiteBoard</span>
           </div>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm">
             Instant multi-user canvas collaboration anywhere, anytime.
           </p>
         </div>
 
         <div>
-          <h4 className="text-white font-semibold mb-4">Product</h4>
+          <h4 className="home-footer__heading mb-4 font-semibold">Product</h4>
           <ul className="space-y-2 text-sm">
             <li>
-              <a href="#features" className="hover:text-white transition">
+              <a href="#features" className="home-footer__link transition">
                 Features
               </a>
             </li>
             <li>
-              <a href="/dashboard" className="hover:text-white transition">
+              <a href="/dashboard" className="home-footer__link transition">
                 Dashboard
               </a>
             </li>
@@ -32,8 +32,8 @@ export const Footer: React.FC = () => {
         </div>
 
         <div>
-          <h4 className="text-white font-semibold mb-4">Tech Stack</h4>
-          <ul className="space-y-2 text-sm text-slate-400">
+          <h4 className="home-footer__heading mb-4 font-semibold">Tech Stack</h4>
+          <ul className="space-y-2 text-sm">
             <li>React + Vite + TypeScript</li>
             <li>Node.js / Express</li>
             <li>Socket.IO & Prisma</li>
@@ -41,7 +41,7 @@ export const Footer: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto mt-12 pt-6 border-t border-slate-800 text-center text-xs text-slate-500">
+      <div className="home-footer__legal mx-auto mt-12 max-w-6xl border-t pt-6 text-center text-xs">
         &copy; {new Date().getFullYear()} RealTime WhiteBoard. All rights reserved.
       </div>
     </footer>

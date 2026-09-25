@@ -32,24 +32,27 @@ const featureList: FeatureCard[] = [
 
 export const Features: React.FC = () => {
   return (
-    <section id="features" className="py-20 px-6 bg-slate-50">
-      <div className="max-w-6xl mx-auto text-center">
-        <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
-          Everything You Need for Remote Brainstorming
-        </h2>
-        <p className="mt-4 text-gray-600 text-lg">
-          Designed for seamless vector performance and instant collaboration.
-        </p>
+    <section id="features" className="home-features px-6 py-20">
+      <div className="mx-auto max-w-6xl">
+        <div className="max-w-xl">
+          <p className="home-section__eyebrow text-xs font-semibold uppercase tracking-[0.2em]">Built for momentum</p>
+          <h2 className="home-features__heading mt-4 text-3xl sm:text-4xl">
+            Everything stays in one place.
+          </h2>
+          <p className="home-features__copy mt-4 text-base leading-relaxed">
+            Simple tools for teams that need to think together without getting in the way.
+          </p>
+        </div>
 
-        <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="home-features__grid mt-12 grid grid-cols-1 divide-y border-y sm:grid-cols-2 sm:divide-x sm:divide-y-0">
           {featureList.map((feature, index) => (
             <div
               key={index}
-              className="p-8 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow text-left"
+              className="home-feature p-6 text-left sm:p-8"
             >
-              <div className="text-4xl mb-4">{feature.icon}</div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">{feature.title}</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">{feature.description}</p>
+              <div className="home-feature__index mb-5 text-sm">0{index + 1}</div>
+              <h3 className="home-feature__heading mb-2 text-lg font-semibold">{feature.title}</h3>
+              <p className="home-feature__copy text-sm leading-relaxed">{feature.description}</p>
             </div>
           ))}
         </div>

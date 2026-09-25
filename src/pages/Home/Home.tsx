@@ -6,8 +6,8 @@ import { Navbar } from "../../components/ui/Navbar";
 
 const Home = () => {
   return (
-    <div className="min-h-screen bg-[#111827] text-white">
-      <Navbar />
+    <div className="home-shell">
+      <Navbar minimal />
       <Hero />
       <Features/>
       <Footer/>

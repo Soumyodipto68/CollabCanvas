@@ -3,7 +3,11 @@ import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
-export const Navbar: React.FC = () => {
+interface NavbarProps {
+  minimal?: boolean;
+}
+
+export const Navbar: React.FC<NavbarProps> = ({ minimal = false }) => {
   const { user, loading, setUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -40,12 +44,12 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 flex items-center justify-between px-8 py-3 bg-slate-900/90 backdrop-blur-md border-b border-slate-800/80 text-white shadow-lg">
+    <nav className={`sticky top-0 z-50 flex items-center justify-between px-6 py-4 sm:px-8 ${minimal ? "home-nav" : "bg-slate-900/90 text-white shadow-lg backdrop-blur-md border-b border-slate-800/80"}`}>
       <Link to="/" className="flex items-center gap-3 group">
-        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-          <span className="text-4xl">🎨</span>
+        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${minimal ? "home-nav__mark" : "bg-linear-to-br from-blue-600 to-indigo-600 shadow-md shadow-blue-500/20"} transition-transform group-hover:scale-105`}>
+          <span className="text-lg">✦</span>
         </div>
-        <span className="text-4xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+        <span className={`text-xl font-bold tracking-tight ${minimal ? "home-nav__brand" : "text-white"}`}>
           Collab Canvas
         </span>
       </Link>
@@ -54,7 +58,7 @@ export const Navbar: React.FC = () => {
         {activeUser && location.pathname !== "/dashboard" && (
           <Link
             to="/dashboard"
-            className="px-3 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition"
+            className={`rounded-lg px-3 py-2 text-sm font-medium transition ${minimal ? "home-nav__dashboard" : "text-slate-300 hover:bg-slate-800/60 hover:text-white"}`}
           >
             Dashboard
           </Link>
@@ -66,11 +70,11 @@ export const Navbar: React.FC = () => {
             <div className="h-9 w-9 rounded-full bg-slate-800 animate-pulse" />
           </div>
         ) : activeUser ? (
-          <div className="flex items-center gap-4 pl-2 border-l border-slate-800">
+          <div className={`flex items-center gap-4 border-l pl-2 ${minimal ? "home-nav__account" : "border-slate-800"}`}>
             <Link
               to="/profile"
               aria-label={`Open profile for ${displayName}`}
-              className="flex items-center gap-3 rounded-lg p-1 transition hover:bg-slate-800/60"
+              className={`flex items-center gap-3 rounded-lg p-1 transition ${minimal ? "home-nav__profile" : "hover:bg-slate-800/60"}`}
             >
               {rawProfilePic && !imgError ? (
                 <img
@@ -78,20 +82,20 @@ export const Navbar: React.FC = () => {
                   alt={displayName}
                   referrerPolicy="no-referrer"
                   onError={() => setImgError(true)}
-                  className="w-9 h-9 rounded-full object-cover ring-2 ring-blue-500/30 bg-slate-800"
+                  className={`h-9 w-9 rounded-full object-cover ${minimal ? "home-nav__avatar" : "ring-2 ring-blue-500/30 bg-slate-800"}`}
                 />
               ) : (
-                <div className="w-9 h-9 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-sm shrink-0 ring-2 ring-blue-500/20">
+                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ${minimal ? "home-nav__avatar" : "border border-blue-500/30 bg-blue-600/20 text-blue-400 ring-2 ring-blue-500/20"}`}>
                   {userInitial}
                 </div>
               )}
-              <span className="text-sm font-medium text-slate-200 hidden sm:inline">
+              <span className={`hidden text-sm font-medium sm:inline ${minimal ? "home-nav__profile" : "text-slate-200"}`}>
                 {displayName}
               </span>
             </Link>
             <button
               onClick={handleLogout}
-              className="px-4 py-2 text-sm font-semibold text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-lg transition shadow-sm cursor-pointer"
+              className={`cursor-pointer px-4 py-2 text-sm font-semibold transition ${minimal ? "home-nav__action" : "rounded-lg border border-slate-700/60 bg-slate-800/80 text-slate-300 shadow-sm hover:bg-slate-800 hover:text-white"}`}
             >
               Logout
             </button>
@@ -99,7 +103,7 @@ export const Navbar: React.FC = () => {
         ) : (
           <button
             onClick={() => navigate("/login")}
-            className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 active:scale-95 rounded-lg shadow-md shadow-blue-600/20 transition cursor-pointer"
+            className={`cursor-pointer px-5 py-2 text-sm font-semibold transition ${minimal ? "home-nav__sign-in" : "rounded-lg bg-blue-600 text-white shadow-md shadow-blue-600/20 hover:bg-blue-500 active:scale-95"}`}
           >
             Sign In
           </button>

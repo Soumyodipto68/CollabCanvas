@@ -1,1 +1,215 @@
 @import "tailwindcss";
+
+:root {
+	--font-family-primary: ABCDiatype, sans-serif;
+	--font-size-base: 16px;
+	--font-size-xs: 14px;
+	--font-size-sm: 16px;
+	--font-size-md: 20.08px;
+	--font-size-lg: 28px;
+	--font-size-xl: 72px;
+	--font-weight-base: 400;
+	--line-height-base: 24px;
+	--color-text-primary: #4b5563;
+	--color-text-tertiary: #f1f3f4;
+	--color-text-inverse: #ffffff;
+	--color-surface-base: #000000;
+	--color-surface-muted: #ff3c00;
+	--color-surface-raised: #0b1419;
+	--color-surface-strong: #faf5f0;
+	--color-border: #26343b;
+	--color-focus: #ffb199;
+	--radius-xs: 4px;
+	--radius-sm: 6px;
+	--radius-md: 8px;
+	--motion-instant: 150ms;
+	--motion-fast: 200ms;
+	--motion-normal: 300ms;
+	--motion-slow: 400ms;
+}
+
+html {
+	font-family: var(--font-family-primary);
+	font-size: var(--font-size-base);
+}
+
+body {
+	margin: 0;
+	background: var(--color-surface-base);
+	color: var(--color-text-tertiary);
+	line-height: var(--line-height-base);
+}
+
+:where(button, a, input):focus-visible {
+	outline: 2px solid var(--color-focus);
+	outline-offset: 3px;
+}
+
+.home-shell {
+	min-height: 100vh;
+	background: var(--color-surface-base);
+	color: var(--color-text-tertiary);
+}
+
+.home-nav {
+	border-color: var(--color-border);
+	background: var(--color-surface-base);
+	color: var(--color-text-inverse);
+}
+
+.home-nav__brand,
+.home-nav__profile:hover,
+.home-nav__dashboard:hover {
+	color: var(--color-text-inverse);
+}
+
+.home-nav__mark {
+	background: var(--color-surface-muted);
+	color: var(--color-surface-base);
+}
+
+.home-nav__dashboard,
+.home-nav__profile {
+	color: var(--color-text-tertiary);
+}
+
+.home-nav__dashboard:hover,
+.home-nav__profile:hover {
+	background: var(--color-surface-raised);
+}
+
+.home-nav__account {
+	border-color: var(--color-border);
+}
+
+.home-nav__avatar,
+.home-nav__action {
+	border-color: var(--color-border);
+	background: var(--color-surface-raised);
+}
+
+.home-nav__avatar {
+	color: var(--color-text-inverse);
+}
+
+.home-nav__action {
+	color: var(--color-text-tertiary);
+}
+
+.home-nav__action:hover {
+	border-color: var(--color-text-primary);
+	color: var(--color-text-inverse);
+}
+
+.home-nav__sign-in,
+.home-hero__primary {
+	background: var(--color-surface-muted);
+	color: var(--color-text-inverse);
+}
+
+.home-nav__sign-in:hover,
+.home-hero__primary:hover {
+	background: #d93200;
+}
+
+.home-hero {
+	background: var(--color-surface-base);
+}
+
+.home-hero__eyebrow,
+.home-section__eyebrow,
+.home-feature__index {
+	color: var(--color-surface-muted);
+}
+
+.home-hero__title {
+	color: var(--color-text-inverse);
+	font-size: clamp(48px, 8vw, var(--font-size-xl));
+	font-weight: var(--font-weight-base);
+	letter-spacing: -0.04em;
+	line-height: 1;
+}
+
+.home-hero__body,
+.home-features__copy,
+.home-feature__copy {
+	color: var(--color-text-primary);
+}
+
+.home-hero__primary,
+.home-hero__secondary {
+	min-height: 48px;
+	border-radius: var(--radius-sm);
+	font-size: var(--font-size-sm);
+	font-weight: 700;
+	transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+}
+
+.home-hero__secondary {
+	border-color: var(--color-border);
+	background: transparent;
+	color: var(--color-text-tertiary);
+}
+
+.home-hero__secondary:hover {
+	border-color: var(--color-text-primary);
+	background: var(--color-surface-raised);
+}
+
+.home-hero__preview {
+	border-color: var(--color-border);
+	background: var(--color-surface-raised);
+}
+
+.home-hero__preview-bar,
+.home-hero__preview-canvas {
+	border-color: var(--color-border);
+}
+
+.home-hero__preview-bar {
+	color: var(--color-text-primary);
+}
+
+.home-hero__preview-canvas {
+	background: var(--color-surface-base);
+}
+
+.home-features {
+	border-color: var(--color-border);
+	background: var(--color-surface-strong);
+}
+
+.home-features__heading,
+.home-feature__heading {
+	color: var(--color-surface-base);
+}
+
+.home-features__grid,
+.home-feature + .home-feature {
+	border-color: #d8d1cb;
+}
+
+.home-footer {
+	border-color: var(--color-border);
+	background: var(--color-surface-base);
+	color: var(--color-text-primary);
+}
+
+.home-footer__heading,
+.home-footer__brand {
+	color: var(--color-text-inverse);
+}
+
+.home-footer__link:hover {
+	color: var(--color-text-inverse);
+}
+
+.home-footer__legal {
+	border-color: var(--color-border);
+}
+
+@media (max-width: 640px) {
+	.home-hero__title {
+		font-size: 48px;
+	}
+}
