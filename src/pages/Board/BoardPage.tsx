@@ -57,6 +57,7 @@ export const BoardPage: React.FC = () => {
   const [activeTool, setActiveTool] = useState<"draw" | "pan">("draw");
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [showGrid, setShowGrid] = useState(true);
   const [isPanning, setIsPanning] = useState(false);
   const startPanRef = useRef({ x: 0, y: 0 });
 
@@ -342,20 +343,25 @@ export const BoardPage: React.FC = () => {
     ctx.translate(pan.x, pan.y);
     ctx.scale(zoom, zoom);
 
-    // Infinite Grid Dot Pattern
-    ctx.fillStyle = "#334155";
-    const dotSpacing = 30;
-    const startX = Math.floor(-pan.x / zoom / dotSpacing) * dotSpacing - dotSpacing;
-    const endX = startX + canvas.width / zoom + dotSpacing * 2;
-    const startY = Math.floor(-pan.y / zoom / dotSpacing) * dotSpacing - dotSpacing;
-    const endY = startY + canvas.height / zoom + dotSpacing * 2;
+    if (showGrid) {
+      ctx.strokeStyle = "#334155";
+      ctx.lineWidth = 1 / zoom;
+      const dotSpacing = 30;
+      const startX = Math.floor(-pan.x / zoom / dotSpacing) * dotSpacing - dotSpacing;
+      const endX = startX + canvas.width / zoom + dotSpacing * 2;
+      const startY = Math.floor(-pan.y / zoom / dotSpacing) * dotSpacing - dotSpacing;
+      const endY = startY + canvas.height / zoom + dotSpacing * 2;
 
-    for (let x = startX; x < endX; x += dotSpacing) {
-      for (let y = startY; y < endY; y += dotSpacing) {
-        ctx.beginPath();
-        ctx.arc(x, y, 1.2 / zoom, 0, Math.PI * 2);
-        ctx.fill();
+      ctx.beginPath();
+      for (let x = startX; x < endX; x += dotSpacing) {
+        ctx.moveTo(x, startY);
+        ctx.lineTo(x, endY);
       }
+      for (let y = startY; y < endY; y += dotSpacing) {
+        ctx.moveTo(startX, y);
+        ctx.lineTo(endX, y);
+      }
+      ctx.stroke();
     }
 
     // Render Saved Strokes
@@ -375,7 +381,7 @@ export const BoardPage: React.FC = () => {
     });
 
     ctx.restore();
-  }, [strokes, pan, zoom]);
+  }, [strokes, pan, zoom, showGrid]);
 
   // ---------------------------------------------------------------------------
   // 5. Mouse & Window Interactions
@@ -608,6 +614,8 @@ export const BoardPage: React.FC = () => {
         setColor={setColor}
         size={size}
         setSize={setSize}
+        showGrid={showGrid}
+        setShowGrid={setShowGrid}
         onClear={handleClearBoard}
         availableColors={DARK_THEME_COLORS}
       />

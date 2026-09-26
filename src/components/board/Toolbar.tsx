@@ -1,10 +1,13 @@
 import React from "react";
+import { Grid2X2, Square } from "lucide-react";
 
 interface ToolbarProps {
   color: string;
   setColor: (color: string) => void;
   size: number;
   setSize: (size: number) => void;
+  showGrid: boolean;
+  setShowGrid: (showGrid: boolean) => void;
   onClear: () => void;
   availableColors?: string[];
 }
@@ -14,6 +17,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   setColor,
   size,
   setSize,
+  showGrid,
+  setShowGrid,
   onClear,
   availableColors = [
     "#FFFFFF",
@@ -27,7 +32,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   ],
 }) => {
   return (
-    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-700 rounded-2xl px-5 py-3 flex items-center gap-5 shadow-2xl z-50">
+    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-700 rounded-2xl px-5 py-3 flex flex-wrap items-center justify-center gap-5 shadow-2xl z-50 max-w-[calc(100vw-2rem)]">
       {/* Color Palette */}
       <div className="flex items-center gap-2">
         {availableColors.map((c) => (
@@ -63,6 +68,34 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           onChange={(e) => setSize(Number(e.target.value))}
           className="w-20 cursor-pointer accent-sky-400"
         />
+      </div>
+
+      <div className="w-px h-6 bg-slate-700" />
+
+      {/* Canvas Background */}
+      <div className="flex items-center rounded-lg border border-slate-700 bg-slate-900 p-1" aria-label="Canvas background">
+        <button
+          type="button"
+          onClick={() => setShowGrid(true)}
+          aria-pressed={showGrid}
+          className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+            showGrid ? "bg-sky-500 text-slate-950" : "text-slate-400 hover:text-white"
+          }`}
+        >
+          <Grid2X2 size={14} aria-hidden="true" />
+          Grid
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowGrid(false)}
+          aria-pressed={!showGrid}
+          className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+            !showGrid ? "bg-sky-500 text-slate-950" : "text-slate-400 hover:text-white"
+          }`}
+        >
+          <Square size={14} aria-hidden="true" />
+          Blank
+        </button>
       </div>
 
       <div className="w-px h-6 bg-slate-700" />

@@ -381,11 +381,11 @@ body {
 .login-shell button {
 	min-height: 48px;
 	border-radius: var(--radius-sm);
-	background: var(--color-surface-muted);
-	color: var(--color-text-inverse);
+	background: #fff;
+	color: #000;
 	transition: background var(--motion-fast);
 }
 
 .login-shell button:hover {
-	background: #d93200;
+	background: #f3f4f6;
 }
