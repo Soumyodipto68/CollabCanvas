@@ -1,9 +1,11 @@
 // client_side/src/components/board/UserCursors.tsx
 import React from "react";
+import { MousePointer2 } from "lucide-react";
 
 export interface UserCursor {
   id: string;
   name: string;
+  color: string;
   x: number;
   y: number;
 }
@@ -21,8 +23,17 @@ export const UserCursors: React.FC<UserCursorsProps> = ({ cursors }) => {
           className="absolute pointer-events-none transition-all duration-75 ease-out z-30"
           style={{ left: `${c.x}px`, top: `${c.y}px` }}
         >
-          <div className="w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-md" />
-          <span className="ml-2 px-2 py-0.5 bg-red-500/90 text-white text-[10px] rounded-md font-semibold whitespace-nowrap shadow">
+          <MousePointer2
+            size={24}
+            fill={c.color}
+            color="white"
+            strokeWidth={2.5}
+            className="drop-shadow-md"
+          />
+          <span
+            className="absolute left-5 top-4 rounded-md px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap text-white shadow"
+            style={{ backgroundColor: c.color }}
+          >
             {c.name}
           </span>
         </div>
