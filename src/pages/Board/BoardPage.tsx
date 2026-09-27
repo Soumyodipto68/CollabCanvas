@@ -23,6 +23,7 @@ export interface Stroke {
 interface UserCursor {
   id: string;
   name: string;
+  color: string;
   x: number;
   y: number;
 }
@@ -33,6 +34,17 @@ interface RemoteCursorPayload {
   x: number;
   y: number;
 }
+
+const cursorColors = [
+  "#ef4444",
+  "#f97316",
+  "#eab308",
+  "#22c55e",
+  "#06b6d4",
+  "#3b82f6",
+  "#ec4899",
+  "#a855f7",
+];
 
 export const BoardPage: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
@@ -89,10 +101,10 @@ export const BoardPage: React.FC = () => {
   // Collaboration State
   const [activeCount, setActiveCount] = useState<number>(1);
   const [remoteCursors, setRemoteCursors] = useState<Record<string, UserCursor>>({});
-  const [currentUser] = useState<{ id: string; name: string }>(() => ({
-    id: `user-${Math.random().toString(36).substring(2, 9)}`,
-    name: "User_" + Math.floor(Math.random() * 1000),
-  }));
+  const [currentUserId] = useState(
+    () => `user-${Math.random().toString(36).substring(2, 9)}`
+  );
+  const currentUserName = user?.displayName?.trim() || user?.name?.trim() || "Anonymous";
 
   // Convert Screen Coordinates -> Infinite World Coordinates
   const getWorldCoordinates = (clientX: number, clientY: number) => {
@@ -283,8 +295,8 @@ export const BoardPage: React.FC = () => {
     socket.on("connect", () => {
       socket.emit("join-board", {
         boardId,
-        userId: currentUser.id,
-        name: currentUser.name,
+        userId: currentUserId,
+        name: currentUserName,
       });
     });
 
@@ -292,7 +304,7 @@ export const BoardPage: React.FC = () => {
 
     socket.on("draw-stroke", (incomingStroke: Stroke) => {
       // Ignore self-sent strokes
-      if (incomingStroke.userId === currentUser.id) return;
+      if (incomingStroke.userId === currentUserId) return;
       setStrokes((prev) => [...prev, incomingStroke]);
     });
 
@@ -302,6 +314,9 @@ export const BoardPage: React.FC = () => {
         [data.userId]: {
           id: data.userId,
           name: data.name,
+          color:
+            prev[data.userId]?.color ??
+            cursorColors[Math.floor(Math.random() * cursorColors.length)],
           x: data.x,
           y: data.y,
         },
@@ -319,10 +334,10 @@ export const BoardPage: React.FC = () => {
     });
 
     return () => {
-      socket.emit("leave-board", { boardId, userId: currentUser.id });
+      socket.emit("leave-board", { boardId, userId: currentUserId });
       socket.disconnect();
     };
-  }, [boardId, currentUser.id, currentUser.name]);
+  }, [boardId, currentUserId, currentUserName]);
 
   // ---------------------------------------------------------------------------
   // 4. Render Loop & Viewport Transformations
@@ -415,8 +430,8 @@ export const BoardPage: React.FC = () => {
       const screenPos = getScreenCoordinates(worldPoint.x, worldPoint.y);
       socketRef.current.emit("mouse-move", {
         boardId,
-        userId: currentUser.id,
-        name: currentUser.name,
+        userId: currentUserId,
+        name: currentUserName,
         x: screenPos.x,
         y: screenPos.y,
       });
@@ -466,7 +481,7 @@ export const BoardPage: React.FC = () => {
           points: [...currentStrokeRef.current],
           color,
           size,
-          userId: currentUser.id,
+          userId: currentUserId,
         };
 
         const updated = [...strokesRef.current, finishedStroke];
@@ -484,7 +499,7 @@ export const BoardPage: React.FC = () => {
 
     window.addEventListener("mouseup", handleGlobalMouseUp);
     return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
-  }, [isDrawing, isPanning, color, size, boardId, currentUser.id]);
+  }, [isDrawing, isPanning, color, size, boardId, currentUserId]);
 
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
