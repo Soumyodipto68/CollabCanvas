@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { BrandMark } from "../common/BrandMark.tsx";
 
 interface BoardHeaderProps {
   title: string;
@@ -117,9 +118,10 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
       <div className="flex items-center gap-4">
         <button
           onClick={onBack}
-          className="bg-slate-800 border border-slate-700 text-slate-300 rounded-lg px-3 py-2 text-xs font-medium hover:bg-slate-700 transition-colors cursor-pointer"
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700 cursor-pointer"
         >
-          ← Dashboard
+          <BrandMark className="h-5 w-5" />
+          <span>← Dashboard</span>
         </button>
 
         <div className="flex items-center gap-3">

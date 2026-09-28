@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { BrandMark } from "../common/BrandMark.tsx";
 
 export const Sidebar: React.FC = () => {
   const { user, setUser } = useAuth();
@@ -91,14 +92,15 @@ export const Sidebar: React.FC = () => {
         {/* Top Header & Branding */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800 shrink-0">
           {!isCollapsed && (
-            <div className="flex items-center gap-2.5">
-              {/* <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-500/20">
-                W
-              </div> */}
-              <span className="text-slate-50 font-bold text-lg tracking-wide">
-          
-              </span>
-            </div>
+            <Link to="/" className="flex min-w-0 items-center gap-2.5 text-sm font-semibold text-slate-50 no-underline" aria-label="Canvas home">
+              <BrandMark />
+              <span className="truncate">Collab Canvas</span>
+            </Link>
+          )}
+          {isCollapsed && (
+            <Link to="/" className="mx-auto" aria-label="Canvas home">
+              <BrandMark />
+            </Link>
           )}
 
           {/* Collapse Toggle Button */}

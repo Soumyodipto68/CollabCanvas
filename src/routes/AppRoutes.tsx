@@ -10,6 +10,7 @@ import { SettingsPage } from "../pages/Settings/SettingsPage";
 import { ProfilePage } from "../pages/Profile/ProfilePage";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { BoardPage } from "../pages/Board/BoardPage";
+import { NotFound } from "../pages/NotFound/NotFound";
 
 
 const AppRoutes = () => {
@@ -26,6 +27,7 @@ const AppRoutes = () => {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/board/:boardId" element={<BoardPage />} />
       </Route>
+          <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
