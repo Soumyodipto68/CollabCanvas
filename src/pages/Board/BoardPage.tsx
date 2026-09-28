@@ -20,6 +20,187 @@ export interface Stroke {
   userId?: string;
 }
 
+interface ShapeElement {
+  id: string;
+  type: "shape";
+  shape: "rectangle" | "ellipse" | "diamond";
+  start: StrokePoint;
+  end: StrokePoint;
+  color: string;
+  size: number;
+  userId?: string;
+}
+
+interface ArrowElement {
+  id: string;
+  type: "arrow";
+  arrowType: "single" | "double" | "dashed";
+  start: StrokePoint;
+  end: StrokePoint;
+  color: string;
+  size: number;
+  userId?: string;
+}
+
+interface TextElement {
+  id: string;
+  type: "text";
+  x: number;
+  y: number;
+  text: string;
+  fontSize: number;
+  color: string;
+  userId?: string;
+}
+
+type BoardElement = Stroke | ShapeElement | ArrowElement | TextElement;
+type BoardTool = "draw" | "select" | "pan" | "shape" | "arrow" | "text";
+
+const getElementBounds = (element: BoardElement, ctx: CanvasRenderingContext2D) => {
+  if ("points" in element) {
+    if (element.points.length === 0) {
+      return { left: 0, top: 0, right: 0, bottom: 0 };
+    }
+    const xs = element.points.map((point) => point.x);
+    const ys = element.points.map((point) => point.y);
+    return {
+      left: Math.min(...xs),
+      top: Math.min(...ys),
+      right: Math.max(...xs),
+      bottom: Math.max(...ys),
+    };
+  }
+
+  if (element.type === "text") {
+    ctx.font = `${element.fontSize}px ABCDiatype, sans-serif`;
+    return {
+      left: element.x,
+      top: element.y,
+      right: element.x + ctx.measureText(element.text).width,
+      bottom: element.y + element.fontSize * 1.25,
+    };
+  }
+
+  return {
+    left: Math.min(element.start.x, element.end.x),
+    top: Math.min(element.start.y, element.end.y),
+    right: Math.max(element.start.x, element.end.x),
+    bottom: Math.max(element.start.y, element.end.y),
+  };
+};
+
+const findElementAt = (
+  elements: BoardElement[],
+  point: StrokePoint,
+  ctx: CanvasRenderingContext2D,
+  zoom: number,
+) => {
+  const tolerance = 10 / zoom;
+  return [...elements].reverse().find((element) => {
+    const bounds = getElementBounds(element, ctx);
+    return (
+      point.x >= bounds.left - tolerance &&
+      point.x <= bounds.right + tolerance &&
+      point.y >= bounds.top - tolerance &&
+      point.y <= bounds.bottom + tolerance
+    );
+  });
+};
+
+const translateElement = (element: BoardElement, dx: number, dy: number): BoardElement => {
+  if ("points" in element) {
+    return { ...element, points: element.points.map((point) => ({ x: point.x + dx, y: point.y + dy })) };
+  }
+  if (element.type === "text") {
+    return { ...element, x: element.x + dx, y: element.y + dy };
+  }
+  return {
+    ...element,
+    start: { x: element.start.x + dx, y: element.start.y + dy },
+    end: { x: element.end.x + dx, y: element.end.y + dy },
+  };
+};
+
+const drawArrowHead = (
+  ctx: CanvasRenderingContext2D,
+  from: StrokePoint,
+  to: StrokePoint,
+  size: number,
+) => {
+  const angle = Math.atan2(to.y - from.y, to.x - from.x);
+  const headLength = Math.max(10, size * 4);
+  ctx.beginPath();
+  ctx.moveTo(to.x, to.y);
+  ctx.lineTo(
+    to.x - headLength * Math.cos(angle - Math.PI / 6),
+    to.y - headLength * Math.sin(angle - Math.PI / 6),
+  );
+  ctx.moveTo(to.x, to.y);
+  ctx.lineTo(
+    to.x - headLength * Math.cos(angle + Math.PI / 6),
+    to.y - headLength * Math.sin(angle + Math.PI / 6),
+  );
+  ctx.stroke();
+};
+
+const drawBoardElement = (ctx: CanvasRenderingContext2D, element: BoardElement) => {
+  ctx.strokeStyle = element.color;
+  ctx.fillStyle = element.color;
+  ctx.lineWidth = element.type === "text" ? 1 : element.size;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  if ("points" in element) {
+    if (element.points.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(element.points[0].x, element.points[0].y);
+    for (let index = 1; index < element.points.length; index++) {
+      ctx.lineTo(element.points[index].x, element.points[index].y);
+    }
+    ctx.stroke();
+    return;
+  }
+
+  if (element.type === "text") {
+    ctx.font = `${element.fontSize}px ABCDiatype, sans-serif`;
+    ctx.textBaseline = "top";
+    ctx.fillText(element.text, element.x, element.y);
+    return;
+  }
+
+  if (element.type === "shape") {
+    const left = Math.min(element.start.x, element.end.x);
+    const top = Math.min(element.start.y, element.end.y);
+    const width = Math.abs(element.end.x - element.start.x);
+    const height = Math.abs(element.end.y - element.start.y);
+    ctx.beginPath();
+    if (element.shape === "rectangle") {
+      ctx.rect(left, top, width, height);
+    } else if (element.shape === "ellipse") {
+      ctx.ellipse(left + width / 2, top + height / 2, width / 2, height / 2, 0, 0, Math.PI * 2);
+    } else {
+      ctx.moveTo(left + width / 2, top);
+      ctx.lineTo(left + width, top + height / 2);
+      ctx.lineTo(left + width / 2, top + height);
+      ctx.lineTo(left, top + height / 2);
+      ctx.closePath();
+    }
+    ctx.stroke();
+    return;
+  }
+
+  ctx.setLineDash(element.arrowType === "dashed" ? [8, 6] : []);
+  ctx.beginPath();
+  ctx.moveTo(element.start.x, element.start.y);
+  ctx.lineTo(element.end.x, element.end.y);
+  ctx.stroke();
+  drawArrowHead(ctx, element.start, element.end, element.size);
+  if (element.arrowType === "double") {
+    drawArrowHead(ctx, element.end, element.start, element.size);
+  }
+  ctx.setLineDash([]);
+};
+
 interface UserCursor {
   id: string;
   name: string;
@@ -62,11 +243,21 @@ export const BoardPage: React.FC = () => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [color, setColor] = useState("#FFFFFF");
   const [size, setSize] = useState(3);
-  const [strokes, setStrokes] = useState<Stroke[]>([]);
+  const [strokes, setStrokes] = useState<BoardElement[]>([]);
   const currentStrokeRef = useRef<StrokePoint[]>([]);
 
   // Infinite Canvas Viewport State (Pan & Zoom)
-  const [activeTool, setActiveTool] = useState<"draw" | "pan">("draw");
+  const [activeTool, setActiveTool] = useState<BoardTool>("draw");
+  const [shapeType, setShapeType] = useState<ShapeElement["shape"]>("rectangle");
+  const [arrowType, setArrowType] = useState<ArrowElement["arrowType"]>("single");
+  const [textSize, setTextSize] = useState(24);
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+  const [previewElement, setPreviewElement] = useState<BoardElement | null>(null);
+  const [isCreatingElement, setIsCreatingElement] = useState(false);
+  const [isMovingElement, setIsMovingElement] = useState(false);
+  const [textDraft, setTextDraft] = useState<{ x: number; y: number; screenX: number; screenY: number; value: string } | null>(null);
+  const elementStartRef = useRef<StrokePoint | null>(null);
+  const movingElementRef = useRef<{ id: string; origin: BoardElement; start: StrokePoint } | null>(null);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [showGrid, setShowGrid] = useState(true);
@@ -86,7 +277,7 @@ export const BoardPage: React.FC = () => {
   
   // Critical persistence guards
   const isLoadedRef = useRef(false);
-  const strokesRef = useRef<Stroke[]>([]);
+  const strokesRef = useRef<BoardElement[]>([]);
   const titleRef = useRef<string>(boardTitle);
 
   // Keep state refs updated for unload/unmount saving
@@ -130,7 +321,7 @@ export const BoardPage: React.FC = () => {
 
   // Direct persistence trigger (bypasses debouncer)
   const saveToServer = useCallback(
-    async (dataToSave: Stroke[], titleToSave: string) => {
+    async (dataToSave: BoardElement[], titleToSave: string) => {
       if (!boardId || !isLoadedRef.current) return;
 
       setSaveStatus("saving");
@@ -181,7 +372,7 @@ export const BoardPage: React.FC = () => {
     let isMounted = true;
 
     const loadBoardData = async () => {
-      let loadedStrokes: Stroke[] = [];
+      let loadedStrokes: BoardElement[] = [];
       let loadedTitle = "Untitled Board";
       let loadedDetails = "";
       let loadedPriority: "low" | "medium" | "high" = "medium";
@@ -302,10 +493,24 @@ export const BoardPage: React.FC = () => {
 
     socket.on("room-users-count", (count: number) => setActiveCount(count));
 
-    socket.on("draw-stroke", (incomingStroke: Stroke) => {
+    socket.on("draw-stroke", (incomingStroke: BoardElement) => {
       // Ignore self-sent strokes
       if (incomingStroke.userId === currentUserId) return;
       setStrokes((prev) => [...prev, incomingStroke]);
+    });
+
+    socket.on("update-element", (incomingElement: BoardElement) => {
+      if (incomingElement.userId === currentUserId) return;
+      setStrokes((previous) => {
+        const exists = previous.some((element) => element.id === incomingElement.id);
+        return exists
+          ? previous.map((element) => element.id === incomingElement.id ? incomingElement : element)
+          : [...previous, incomingElement];
+      });
+    });
+
+    socket.on("delete-element", (elementId: string) => {
+      setStrokes((previous) => previous.filter((element) => element.id !== elementId));
     });
 
     socket.on("cursor-moved", (data: RemoteCursorPayload) => {
@@ -323,7 +528,12 @@ export const BoardPage: React.FC = () => {
       }));
     });
 
-    socket.on("board-cleared", () => setStrokes([]));
+    socket.on("board-cleared", () => {
+      setStrokes([]);
+      strokesRef.current = [];
+      setSelectedElementId(null);
+      setPreviewElement(null);
+    });
 
     socket.on("user-left", (userId: string) => {
       setRemoteCursors((prev) => {
@@ -379,43 +589,179 @@ export const BoardPage: React.FC = () => {
       ctx.stroke();
     }
 
-    // Render Saved Strokes
-    strokes.forEach((stroke) => {
-      if (!stroke.points || stroke.points.length < 2) return;
-      ctx.beginPath();
-      ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.size;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-
-      ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-      for (let i = 1; i < stroke.points.length; i++) {
-        ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+    const drawSelection = (element: BoardElement) => {
+      const bounds = getElementBounds(element, ctx);
+      const padding = 7 / zoom;
+      const handleSize = 6 / zoom;
+      ctx.save();
+      ctx.strokeStyle = "#38bdf8";
+      ctx.lineWidth = 1.5 / zoom;
+      ctx.setLineDash([5 / zoom, 4 / zoom]);
+      ctx.strokeRect(
+        bounds.left - padding,
+        bounds.top - padding,
+        bounds.right - bounds.left + padding * 2,
+        bounds.bottom - bounds.top + padding * 2,
+      );
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#38bdf8";
+      for (const x of [bounds.left - padding, bounds.right + padding]) {
+        for (const y of [bounds.top - padding, bounds.bottom + padding]) {
+          ctx.fillRect(x - handleSize / 2, y - handleSize / 2, handleSize, handleSize);
+        }
       }
-      ctx.stroke();
+      ctx.restore();
+    };
+
+    strokes.forEach((element) => {
+      if (previewElement?.id === element.id) return;
+      drawBoardElement(ctx, element);
+      if (element.id === selectedElementId) drawSelection(element);
     });
 
+    if (previewElement) {
+      drawBoardElement(ctx, previewElement);
+      if (previewElement.id === selectedElementId) drawSelection(previewElement);
+    }
+
     ctx.restore();
-  }, [strokes, pan, zoom, showGrid]);
+  }, [strokes, pan, zoom, showGrid, previewElement, selectedElementId]);
 
   // ---------------------------------------------------------------------------
   // 5. Mouse & Window Interactions
   // ---------------------------------------------------------------------------
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const persistBoardElement = (element: BoardElement) => {
+    const updated = [...strokesRef.current, element];
+    strokesRef.current = updated;
+    setStrokes(updated);
+    if (socketRef.current && boardId) {
+      socketRef.current.emit("draw-stroke", { boardId, stroke: element });
+    }
+  };
+
+  const commitText = () => {
+    if (!textDraft?.value.trim()) {
+      setTextDraft(null);
+      return;
+    }
+    persistBoardElement({
+      id: Math.random().toString(36).substring(2, 9),
+      type: "text",
+      x: textDraft.x,
+      y: textDraft.y,
+      text: textDraft.value.trim(),
+      fontSize: textSize,
+      color,
+      userId: currentUserId,
+    });
+    setTextDraft(null);
+    setActiveTool("select");
+  };
+
+  const deleteSelectedElement = () => {
+    if (!selectedElementId) return;
+    const updated = strokesRef.current.filter((element) => element.id !== selectedElementId);
+    strokesRef.current = updated;
+    setStrokes(updated);
+    if (socketRef.current && boardId) {
+      socketRef.current.emit("delete-element", { boardId, elementId: selectedElementId });
+    }
+    setSelectedElementId(null);
+    setPreviewElement(null);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Delete" && event.key !== "Backspace") return;
+      if (activeTool !== "select" || !selectedElementId) return;
+      if ((event.target as HTMLElement).matches("input, textarea, select")) return;
+      event.preventDefault();
+      deleteSelectedElement();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeTool, selectedElementId]);
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+
     if (e.button === 1 || activeTool === "pan") {
       setIsPanning(true);
       startPanRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
       return;
     }
 
-    if (e.button === 0 && activeTool === "draw") {
+    if (e.button !== 0) return;
+
+    const point = getWorldCoordinates(e.clientX, e.clientY);
+
+    if (activeTool === "select") {
+      const ctx = e.currentTarget.getContext("2d");
+      const element = ctx ? findElementAt(strokesRef.current, point, ctx, zoom) : undefined;
+      setSelectedElementId(element?.id ?? null);
+      setPreviewElement(element ?? null);
+      if (element) {
+        movingElementRef.current = { id: element.id, origin: element, start: point };
+        setIsMovingElement(true);
+      }
+      return;
+    }
+
+    if (activeTool === "text") {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setTextDraft({
+        x: point.x,
+        y: point.y,
+        screenX: e.clientX - rect.left,
+        screenY: e.clientY - rect.top,
+        value: "",
+      });
+      return;
+    }
+
+    if (activeTool === "shape") {
+      const element: ShapeElement = {
+        id: Math.random().toString(36).substring(2, 9),
+        type: "shape",
+        shape: shapeType,
+        start: point,
+        end: point,
+        color,
+        size,
+        userId: currentUserId,
+      };
+      elementStartRef.current = point;
+      setPreviewElement(element);
+      setIsCreatingElement(true);
+      return;
+    }
+
+    if (activeTool === "arrow") {
+      const element: ArrowElement = {
+        id: Math.random().toString(36).substring(2, 9),
+        type: "arrow",
+        arrowType,
+        start: point,
+        end: point,
+        color,
+        size,
+        userId: currentUserId,
+      };
+      elementStartRef.current = point;
+      setPreviewElement(element);
+      setIsCreatingElement(true);
+      return;
+    }
+
+    if (activeTool === "draw") {
       setIsDrawing(true);
-      const point = getWorldCoordinates(e.clientX, e.clientY);
       currentStrokeRef.current = [point];
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (isPanning) {
       setPan({
         x: e.clientX - startPanRef.current.x,
@@ -435,6 +781,21 @@ export const BoardPage: React.FC = () => {
         x: screenPos.x,
         y: screenPos.y,
       });
+    }
+
+    if (isMovingElement && movingElementRef.current) {
+      const { id, origin, start } = movingElementRef.current;
+      setPreviewElement(translateElement(origin, worldPoint.x - start.x, worldPoint.y - start.y));
+      setSelectedElementId(id);
+      return;
+    }
+
+    if (isCreatingElement && elementStartRef.current) {
+      setPreviewElement((current) => {
+        if (!current || (current.type !== "shape" && current.type !== "arrow")) return current;
+        return { ...current, end: worldPoint };
+      });
+      return;
     }
 
     if (!isDrawing) return;
@@ -465,11 +826,38 @@ export const BoardPage: React.FC = () => {
     }
   };
 
-  // Window-level mouseup handler to ensure strokes complete if drag leaves canvas
+  // Window-level pointer handler to finish gestures even when the pointer leaves the canvas.
   useEffect(() => {
-    const handleGlobalMouseUp = () => {
+    const handleGlobalPointerUp = () => {
       if (isPanning) {
         setIsPanning(false);
+        return;
+      }
+
+      if (isMovingElement && previewElement) {
+        const updated = strokesRef.current.map((element) =>
+          element.id === previewElement.id ? previewElement : element,
+        );
+        strokesRef.current = updated;
+        setStrokes(updated);
+        if (socketRef.current && boardId) {
+          socketRef.current.emit("update-element", { boardId, element: previewElement });
+        }
+        movingElementRef.current = null;
+        setIsMovingElement(false);
+        setPreviewElement(null);
+        return;
+      }
+
+      if (isCreatingElement && previewElement && "start" in previewElement) {
+        const distance = Math.hypot(
+          previewElement.end.x - previewElement.start.x,
+          previewElement.end.y - previewElement.start.y,
+        );
+        if (distance > 2) persistBoardElement(previewElement);
+        elementStartRef.current = null;
+        setIsCreatingElement(false);
+        setPreviewElement(null);
         return;
       }
 
@@ -484,33 +872,42 @@ export const BoardPage: React.FC = () => {
           userId: currentUserId,
         };
 
-        const updated = [...strokesRef.current, finishedStroke];
-        setStrokes(updated);
-
-        if (socketRef.current && boardId) {
-          socketRef.current.emit("draw-stroke", {
-            boardId,
-            stroke: finishedStroke,
-          });
-        }
+        persistBoardElement(finishedStroke);
       }
       currentStrokeRef.current = [];
     };
 
-    window.addEventListener("mouseup", handleGlobalMouseUp);
-    return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
-  }, [isDrawing, isPanning, color, size, boardId, currentUserId]);
+    window.addEventListener("pointerup", handleGlobalPointerUp);
+    window.addEventListener("pointercancel", handleGlobalPointerUp);
+    return () => {
+      window.removeEventListener("pointerup", handleGlobalPointerUp);
+      window.removeEventListener("pointercancel", handleGlobalPointerUp);
+    };
+  }, [isDrawing, isPanning, isCreatingElement, isMovingElement, previewElement, color, size, boardId, currentUserId]);
 
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const cursorX = e.clientX - rect.left;
+    const cursorY = e.clientY - rect.top;
     const zoomFactor = 1.08;
     const newZoom = e.deltaY < 0 ? zoom * zoomFactor : zoom / zoomFactor;
     const clampedZoom = Math.min(Math.max(newZoom, 0.15), 4);
+
+    const worldX = (cursorX - pan.x) / zoom;
+    const worldY = (cursorY - pan.y) / zoom;
+    setPan({
+      x: cursorX - worldX * clampedZoom,
+      y: cursorY - worldY * clampedZoom,
+    });
     setZoom(clampedZoom);
   };
 
   const handleClearBoard = () => {
     setStrokes([]);
+    strokesRef.current = [];
+    setSelectedElementId(null);
+    setPreviewElement(null);
     if (socketRef.current && boardId) {
       socketRef.current.emit("clear-board", { boardId });
     }
@@ -605,25 +1002,6 @@ export const BoardPage: React.FC = () => {
         canEditPriority={canManageBoard}
       />
 
-      <div className="absolute top-20 left-4 z-20 flex items-center gap-1 bg-slate-900/90 border border-slate-800 backdrop-blur-md p-1.5 rounded-xl shadow-xl text-xs">
-        <button
-          onClick={() => setActiveTool("draw")}
-          className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
-            activeTool === "draw" ? "bg-blue-600 text-white" : "text-slate-400 hover:bg-slate-800"
-          }`}
-        >
-          ✏️ Draw Mode
-        </button>
-        <button
-          onClick={() => setActiveTool("pan")}
-          className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
-            activeTool === "pan" ? "bg-blue-600 text-white" : "text-slate-400 hover:bg-slate-800"
-          }`}
-        >
-          🖐️ Pan Canvas
-        </button>
-      </div>
-
       <Toolbar
         color={color}
         setColor={setColor}
@@ -632,17 +1010,65 @@ export const BoardPage: React.FC = () => {
         showGrid={showGrid}
         setShowGrid={setShowGrid}
         onClear={handleClearBoard}
+        activeTool={activeTool}
+        setActiveTool={setActiveTool}
+        shapeType={shapeType}
+        setShapeType={setShapeType}
+        arrowType={arrowType}
+        setArrowType={setArrowType}
+        textSize={textSize}
+        setTextSize={setTextSize}
+        hasSelection={Boolean(selectedElementId)}
+        onDeleteSelected={deleteSelectedElement}
         availableColors={DARK_THEME_COLORS}
       />
 
       <UserCursors cursors={Object.values(remoteCursors)} />
 
+      {textDraft && (
+        <div
+          className="absolute z-70 flex items-center gap-2 rounded-lg border border-sky-400/60 bg-slate-900/95 p-2 shadow-xl"
+          style={{ left: textDraft.screenX, top: textDraft.screenY }}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <input
+            autoFocus
+            type="text"
+            aria-label="Text to add to the board"
+            placeholder="Type here..."
+            value={textDraft.value}
+            onChange={(event) => setTextDraft({ ...textDraft, value: event.target.value })}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") commitText();
+              if (event.key === "Escape") setTextDraft(null);
+            }}
+            className="w-56 border-0 bg-transparent px-2 py-1 text-slate-50 outline-none placeholder:text-slate-500"
+            style={{ color, fontSize: Math.max(14, textSize * zoom) }}
+          />
+          <button
+            type="button"
+            onClick={commitText}
+            className="rounded bg-sky-500 px-2.5 py-1.5 text-xs font-semibold text-slate-950 hover:bg-sky-400"
+          >
+            Add
+          </button>
+          <button
+            type="button"
+            aria-label="Cancel text"
+            onClick={() => setTextDraft(null)}
+            className="px-1.5 py-1 text-sm text-slate-400 hover:text-white"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       <canvas
         ref={canvasRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
         onWheel={handleWheel}
-        className={`block w-full h-full ${
+        className={`block h-full w-full touch-none ${
           activeTool === "pan" || isPanning ? "cursor-grab active:cursor-grabbing" : "cursor-crosshair"
         }`}
       />
