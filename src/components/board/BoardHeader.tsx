@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import { BrandMark } from "../common/BrandMark.tsx";
 
 interface BoardHeaderProps {
@@ -30,13 +31,9 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
   const [tempTitle, setTempTitle] = useState(title);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [shareEmail, setShareEmail] = useState("");
-  const [shareError, setShareError] = useState("");
-  const [shareSuccess, setShareSuccess] = useState("");
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [tempDetails, setTempDetails] = useState(details);
   const [tempPriority, setTempPriority] = useState<"low" | "medium" | "high">(priority);
-  const [editError, setEditError] = useState("");
-  const [editSuccess, setEditSuccess] = useState("");
 
   useEffect(() => {
     setTempDetails(details);
@@ -79,19 +76,17 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
 
     const email = shareEmail.trim();
     if (!email) {
-      setShareError("Enter a valid email address.");
+      toast.error("Enter a valid email address.");
       return;
     }
 
     try {
-      setShareError("");
-      setShareSuccess("");
       await onShare(email);
-      setShareSuccess(`Board shared with ${email}`);
+      toast.success(`Board shared with ${email}`);
       setShareEmail("");
       setIsShareOpen(false);
     } catch (error) {
-      setShareError(error instanceof Error ? error.message : "Unable to share the board right now.");
+      toast.error(error instanceof Error ? error.message : "Unable to share the board right now.");
     }
   };
 
@@ -99,16 +94,14 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
     if (!onEditBoard) return;
 
     try {
-      setEditError("");
-      setEditSuccess("");
       await onEditBoard({
         details: tempDetails.trim(),
         ...(canEditPriority ? { priority: tempPriority } : {}),
       });
-      setEditSuccess("Board updated successfully");
+      toast.success("Board information updated.");
       setIsEditOpen(false);
     } catch (error) {
-      setEditError(error instanceof Error ? error.message : "Unable to update the board right now.");
+      toast.error(error instanceof Error ? error.message : "Unable to update the board right now.");
     }
   };
 
@@ -164,8 +157,6 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
           <div className="relative">
             <button
               onClick={() => {
-                setEditError("");
-                setEditSuccess("");
                 setIsEditOpen((prev) => !prev);
               }}
               className="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold cursor-pointer transition-all duration-200"
@@ -201,9 +192,6 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
                   <option value="high">High</option>
                 </select>
 
-                {editError && <p className="mt-2 text-xs text-red-400">{editError}</p>}
-                {editSuccess && <p className="mt-2 text-xs text-emerald-400">{editSuccess}</p>}
-
                 <div className="mt-3 flex justify-end gap-2">
                   <button
                     onClick={() => setIsEditOpen(false)}
@@ -227,8 +215,6 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
           <div className="relative">
             <button
               onClick={() => {
-                setShareError("");
-                setShareSuccess("");
                 setIsShareOpen((prev) => !prev);
               }}
               className="inline-flex items-center gap-2 bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white border border-blue-400/40 rounded-xl px-3.5 py-2.5 text-xs font-bold cursor-pointer shadow-lg shadow-blue-500/20 transition-all duration-200"
@@ -249,9 +235,6 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
                   placeholder="friend@example.com"
                   className="w-full px-3 py-2 rounded-md border border-slate-700 bg-slate-900 text-slate-50 text-sm outline-none focus:border-blue-500"
                 />
-
-                {shareError && <p className="mt-2 text-xs text-red-400">{shareError}</p>}
-                {shareSuccess && <p className="mt-2 text-xs text-emerald-400">{shareSuccess}</p>}
 
                 <div className="mt-3 flex justify-end gap-2">
                   <button

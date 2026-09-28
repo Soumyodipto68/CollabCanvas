@@ -6,6 +6,7 @@ import { SearchBarControls } from "../../components/dashboard/SearchBarControls"
 import { BoardCard } from "../../components/dashboard/BoardCard";
 import { EmptyState } from "../../components/dashboard/EmptyState";
 import { CreateBoardModal } from "../../components/dashboard/CreateBoardModal";
+import { confirmToast } from "../../utils/confirmToast.tsx";
 
 interface PriorityBoard {
   id: string;
@@ -84,17 +85,20 @@ export const PriorityPage: React.FC = () => {
 
   const handleDeleteBoard = async (event: React.MouseEvent, boardId: string) => {
     event.stopPropagation();
-    if (!confirm("Are you sure you want to delete this board?")) return;
-
-    try {
-      const response = await fetch(`http://localhost:4000/api/boards/${boardId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (response.ok) setBoards((current) => current.filter((board) => (board.boardId || board.id) !== boardId));
-    } catch (error) {
-      console.error("Failed to delete board:", error);
-    }
+    confirmToast({
+      message: "Are you sure you want to delete this board?",
+      confirmLabel: "Delete board",
+      successMessage: "Board deleted.",
+      errorMessage: "Failed to delete board.",
+      onConfirm: async () => {
+        const response = await fetch(`http://localhost:4000/api/boards/${boardId}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+        if (!response.ok) throw new Error("Failed to delete board.");
+        setBoards((current) => current.filter((board) => (board.boardId || board.id) !== boardId));
+      },
+    });
   };
 
   const handleTogglePin = async (event: React.MouseEvent, boardId: string) => {

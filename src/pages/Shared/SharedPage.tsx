@@ -6,6 +6,7 @@ import { SearchBarControls } from "../../components/dashboard/SearchBarControls"
 import { BoardCard } from "../../components/dashboard/BoardCard";
 import { EmptyState } from "../../components/dashboard/EmptyState";
 import { CreateBoardModal } from "../../components/dashboard/CreateBoardModal";
+import { confirmToast } from "../../utils/confirmToast.tsx";
 
 interface Board {
   id: string;
@@ -88,20 +89,20 @@ export const SharedPage: React.FC = () => {
 
   const handleDeleteBoard = async (e: React.MouseEvent, boardId: string) => {
     e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this board?")) return;
-
-    try {
-      const res = await fetch(`http://localhost:4000/api/boards/${boardId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (res.ok) {
+    confirmToast({
+      message: "Are you sure you want to delete this board?",
+      confirmLabel: "Delete board",
+      successMessage: "Board deleted.",
+      errorMessage: "Failed to delete board.",
+      onConfirm: async () => {
+        const res = await fetch(`http://localhost:4000/api/boards/${boardId}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error("Failed to delete board.");
         setBoards((prev) => prev.filter((board) => (board.boardId || board.id) !== boardId));
-      }
-    } catch (err) {
-      console.error("Failed to delete board:", err);
-    }
+      },
+    });
   };
 
   const sharedBoards = useMemo(() => {
