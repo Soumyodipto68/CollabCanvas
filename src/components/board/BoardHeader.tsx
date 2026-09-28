@@ -166,26 +166,26 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
             </button>
 
             {isEditOpen && (
-              <div className="absolute right-0 top-12 w-80 bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-2xl z-60">
-                <label className="block mb-2 text-xs font-medium text-slate-300">
+              <div className="absolute right-0 top-12 z-60 w-[min(28rem,calc(100vw-2rem))] rounded-xl border border-slate-700 bg-slate-800 p-5 shadow-2xl">
+                <label className="mb-2 block text-sm font-semibold text-slate-200">
                   Board Details
                 </label>
                 <textarea
-                  rows={3}
+                  rows={4}
                   value={tempDetails}
                   onChange={(e) => setTempDetails(e.target.value)}
                   placeholder="Add notes or goals for this board..."
-                  className="w-full px-3 py-2 rounded-md border border-slate-700 bg-slate-900 text-slate-50 text-sm outline-none resize-none focus:border-blue-500"
+                  className="min-h-32 w-full resize-y rounded-md border border-slate-700 bg-slate-900 px-4 py-3 text-base text-slate-50 outline-none focus:border-blue-500"
                 />
 
-                <label className="mt-3 block mb-2 text-xs font-medium text-slate-300">
+                <label className="mb-2 mt-4 block text-sm font-semibold text-slate-200">
                   Priority
                 </label>
                 <select
                   value={tempPriority}
                   disabled={!canEditPriority}
                   onChange={(e) => setTempPriority(e.target.value as "low" | "medium" | "high")}
-                  className="w-full px-3 py-2 rounded-md border border-slate-700 bg-slate-900 text-slate-50 text-sm outline-none focus:border-blue-500"
+                  className="w-full rounded-md border border-slate-700 bg-slate-900 px-4 py-3 text-base text-slate-50 outline-none focus:border-blue-500"
                 >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
@@ -224,8 +224,8 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
             </button>
 
             {isShareOpen && (
-              <div className="absolute right-0 top-12 w-80 bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-2xl z-60">
-                <label className="block mb-2 text-xs font-medium text-slate-300">
+              <div className="absolute right-0 top-12 z-60 w-[min(28rem,calc(100vw-2rem))] rounded-xl border border-slate-700 bg-slate-800 p-5 shadow-2xl">
+                <label className="mb-2 block text-sm font-semibold text-slate-200">
                   Share with user email
                 </label>
                 <input
@@ -233,7 +233,7 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
                   value={shareEmail}
                   onChange={(e) => setShareEmail(e.target.value)}
                   placeholder="friend@example.com"
-                  className="w-full px-3 py-2 rounded-md border border-slate-700 bg-slate-900 text-slate-50 text-sm outline-none focus:border-blue-500"
+                  className="w-full rounded-md border border-slate-700 bg-slate-900 px-4 py-3 text-base text-slate-50 outline-none focus:border-blue-500"
                 />
 
                 <div className="mt-3 flex justify-end gap-2">
