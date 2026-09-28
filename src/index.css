@@ -13,7 +13,7 @@
 	--color-text-primary: #4b5563;
 	--color-text-tertiary: #f1f3f4;
 	--color-text-inverse: #ffffff;
-	--color-surface-base: #000000;
+	--color-surface-base: #080d0e;
 	--color-surface-muted: #ff3c00;
 	--color-surface-raised: #0b1419;
 	--color-surface-strong: #faf5f0;
@@ -47,16 +47,16 @@ body {
 
 .home-shell {
 	min-height: 100vh;
-	background: var(--color-surface-base);
+	background-color: var(--color-surface-base);
+	background-image:
+		linear-gradient(rgb(255 255 255 / 2%) 1px, transparent 1px),
+		linear-gradient(90deg, rgb(255 255 255 / 2%) 1px, transparent 1px);
+	background-size: 48px 48px;
 	color: var(--color-text-tertiary);
 }
 
 .home-member {
 	background-color: #080d0e;
-	background-image:
-		linear-gradient(rgb(255 255 255 / 2%) 1px, transparent 1px),
-		linear-gradient(90deg, rgb(255 255 255 / 2%) 1px, transparent 1px);
-	background-size: 48px 48px;
 }
 
 .home-member__main {
@@ -760,7 +760,7 @@ body {
 }
 
 .home-hero {
-	background: var(--color-surface-base);
+	background: transparent;
 }
 
 .home-hero__eyebrow,
@@ -838,7 +838,7 @@ body {
 
 .home-footer {
 	border-color: var(--color-border);
-	background: var(--color-surface-base);
+	background: transparent;
 	color: var(--color-text-primary);
 }
 

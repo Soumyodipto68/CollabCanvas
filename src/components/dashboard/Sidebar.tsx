@@ -2,7 +2,6 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { BrandMark } from "../common/BrandMark.tsx";
 
 export const Sidebar: React.FC = () => {
   const { user, setUser } = useAuth();
@@ -90,25 +89,12 @@ export const Sidebar: React.FC = () => {
       {/* Top Header & Links Wrapper with Scroll support */}
       <div className="flex flex-col flex-1 overflow-y-auto">
         {/* Top Header & Branding */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800 shrink-0">
-          {!isCollapsed && (
-            <Link to="/" className="flex min-w-0 items-center gap-2.5 text-sm font-semibold text-slate-50 no-underline" aria-label="Canvas home">
-              <BrandMark />
-              <span className="truncate">Collab Canvas</span>
-            </Link>
-          )}
-          {isCollapsed && (
-            <Link to="/" className="mx-auto" aria-label="Canvas home">
-              <BrandMark />
-            </Link>
-          )}
+        <div className="h-16 flex items-center justify-center px-4 border-b border-slate-800 shrink-0">
 
           {/* Collapse Toggle Button */}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer ${
-              isCollapsed ? "mx-auto" : ""
-            }`}
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
             title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <svg
